@@ -3,6 +3,7 @@ package com.kimsreviews.API.Services;
 import com.kimsreviews.API.DTO.UserDTO;
 import com.kimsreviews.API.Exceptions.UserNotFoundEXceptions;
 import com.kimsreviews.API.Repository.UserRepo;
+import com.kimsreviews.API.models.Post;
 import com.kimsreviews.API.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
@@ -27,6 +28,8 @@ public class UserServiceImpl implements UserInterface {
         this.emailSender = emailSender;
         this.fileStorageService = fileStorageService;
     }
+    @Autowired
+    UserMapper userMapper;
 
     @Override
     public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) {

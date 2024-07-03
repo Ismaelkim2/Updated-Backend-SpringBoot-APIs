@@ -54,6 +54,14 @@
 			<artifactId>mysql-connector-java</artifactId>
 			<version>8.0.28</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.modelmapper</groupId>
+			<artifactId>modelmapper</artifactId>
+			<version>2.3.8</version>
+		</dependency>
+
+
 		<!-- Spring Boot Starter DevTools -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

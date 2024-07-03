@@ -15,6 +15,7 @@ public class UserDTO {
     private String password;
     private boolean above18;
     private String userImageUrl;
+    private String createdBy;
     private List<String> documentUrls; // Assuming documentUrls is a list of strings
 
     public void setDocumentUrls(List<String> documentUrls) {
@@ -36,6 +37,7 @@ public class UserDTO {
         this.password = user.getPassword();
         this.above18 = user.isAbove18();
         this.userImageUrl = user.getUserImageUrl();
+        this.createdBy=user.getCreatedBy();
     }
 
     // Other methods as needed

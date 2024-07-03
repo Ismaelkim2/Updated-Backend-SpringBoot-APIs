@@ -3,6 +3,8 @@ package com.kimsreviews.API.DTO;
 import com.kimsreviews.API.models.Post;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class PostDTO {
     private Long id;
@@ -19,17 +21,9 @@ public class PostDTO {
     private Integer likes;
     private Integer views;
     private UserDTO userDTO;
+    private LocalDateTime createdAt;
 
-    // Constructors
     public PostDTO() {}
-
-    public void setUser(UserDTO userDTO) {
-        this.userDTO = userDTO;
-    }
-
-    public UserDTO getUser() {
-        return this.userDTO;
-    }
 
     public PostDTO(Post post, UserDTO userDTO) {
         this.id = post.getId();
@@ -45,15 +39,17 @@ public class PostDTO {
         this.createdBy = post.getCreatedBy();
         this.likes = post.getLikes();
         this.views = post.getViews();
+        this.createdAt = post.getCreatedAt(); // Set createdAt from Post entity
         this.userDTO = userDTO;
     }
 
-    // Getter and Setter for user field
-    public UserDTO getUserDTO() {
+    public void setUser(UserDTO userDTO) {
+        this.userDTO = userDTO;
+    }
+
+    public UserDTO getUser() {
         return userDTO;
     }
 
-    public void setUserDTO(UserDTO userDTO) {
-        this.userDTO = userDTO;
-    }
+
 }

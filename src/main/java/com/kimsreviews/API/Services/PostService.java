@@ -3,6 +3,7 @@ package com.kimsreviews.API.Services;
 import com.kimsreviews.API.DTO.PostDTO;
 import com.kimsreviews.API.DTO.UserDTO;
 import com.kimsreviews.API.Repository.PostRepo;
+import com.kimsreviews.API.Repository.UserRepo;
 import com.kimsreviews.API.models.Post;
 import com.kimsreviews.API.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,7 +31,10 @@ public class PostService {
     private UserMapper userMapper;
 
     @Autowired
-    private UserServiceImpl userService;
+    private UserServiceImpl userServiceImpl;
+
+     @Autowired
+     private UserRepo userRepo;
 
     public List<PostDTO> getAllPosts() {
         return postRepo.findAll().stream()
@@ -65,6 +70,7 @@ public class PostService {
             String imageUrl = saveImage(image);
             post.setImageUrl(imageUrl);
         }
+        post.setCreatedAt(LocalDateTime.now()); // Set the createdAt field
         Post savedPost = postRepo.save(post);
         return convertToDTO(savedPost);
     }
@@ -88,14 +94,22 @@ public class PostService {
         postRepo.deleteById(id);
     }
 
-    public void incrementLikes(Long id) {
-        Optional<Post> optionalPost = postRepo.findById(id);
-        if (optionalPost.isPresent()) {
+    public void incrementLikes(Long postId, Long userId) {
+        Optional<Post> optionalPost = postRepo.findById(postId);
+        Optional<User> optionalUser = userRepo.findById(Math.toIntExact(userId));
+
+        if (optionalPost.isPresent() && optionalUser.isPresent()) {
             Post post = optionalPost.get();
-            post.setLikes((post.getLikes() == null ? 0 : post.getLikes()) + 1);
-            postRepo.save(post);
+            User user = optionalUser.get();
+
+            if (!post.getLikedBy().contains(user)) {
+                post.getLikedBy().add(user);
+                post.setLikes(post.getLikes() + 1);
+                postRepo.save(post);
+            }
         }
     }
+
 
     public void incrementViews(Long id) {
         Optional<Post> optionalPost = postRepo.findById(id);
@@ -132,6 +146,7 @@ public class PostService {
         dto.setCreatedBy(post.getCreatedBy());
         dto.setLikes(post.getLikes());
         dto.setViews(post.getViews());
+        dto.setCreatedAt(post.getCreatedAt());
 
         // Fetch user details and set in DTO
         User user = post.getUser();
@@ -160,6 +175,7 @@ public class PostService {
         post.setCreatedBy(dto.getCreatedBy());
         post.setLikes(dto.getLikes() == null ? 0 : dto.getLikes());
         post.setViews(dto.getViews() == null ? 0 : dto.getViews());
+        post.setCreatedAt(dto.getCreatedAt());
         UserDTO userDTO = dto.getUser();
         if (userDTO != null) {
             post.setUser(userMapper.toEntity(userDTO)); // Use dto.getUser() to get UserDTO
@@ -182,5 +198,6 @@ public class PostService {
         existingPost.setCreatedBy(postDTO.getCreatedBy());
         existingPost.setLikes(postDTO.getLikes() == null ? 0 : postDTO.getLikes());
         existingPost.setViews(postDTO.getViews() == null ? 0 : postDTO.getViews());
+        existingPost.setCreatedAt(postDTO.getCreatedAt());
     }
 }

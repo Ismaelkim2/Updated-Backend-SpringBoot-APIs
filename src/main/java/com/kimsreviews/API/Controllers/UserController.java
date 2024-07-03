@@ -1,15 +1,8 @@
 package com.kimsreviews.API.Controllers;
 
 import com.kimsreviews.API.DTO.UserDTO;
-import com.kimsreviews.API.Implementations.ContactForm;
-import com.kimsreviews.API.Implementations.JwtAuthenticationResponse;
-import com.kimsreviews.API.Implementations.JwtTokenProvider;
-import com.kimsreviews.API.Implementations.LoginRequest;
-import com.kimsreviews.API.Repository.UserRepo;
-import com.kimsreviews.API.Services.EmailService;
 import com.kimsreviews.API.Services.FileStorageService;
 import com.kimsreviews.API.Services.UserInterface;
-import com.kimsreviews.API.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +10,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,36 +22,24 @@ import java.util.stream.Collectors;
 @CrossOrigin("http://localhost:4200")
 public class UserController {
 
-    private final UserInterface userInterface;
-    private final EmailService emailService;
-    private final UserRepo userRepo;
+    private final UserInterface userService;
     private final FileStorageService fileStorageService;
 
     @Autowired
-    public UserController(UserInterface userInterface, EmailService emailService, UserRepo userRepo, FileStorageService fileStorageService) {
-        this.userInterface = userInterface;
-        this.emailService = emailService;
-        this.userRepo = userRepo;
+    public UserController(UserInterface userService, FileStorageService fileStorageService) {
+        this.userService = userService;
         this.fileStorageService = fileStorageService;
     }
 
     @GetMapping("/user")
     public ResponseEntity<List<UserDTO>> getUsers() {
-        return new ResponseEntity<>(userInterface.getAllUser(), HttpStatus.OK);
+        return new ResponseEntity<>(userService.getAllUser(), HttpStatus.OK);
     }
 
-    @GetMapping("user/{id}")
+    @GetMapping("/user/{id}")
     public ResponseEntity<UserDTO> userDetails(@PathVariable int id) {
-        return ResponseEntity.ok(userInterface.getUserById(id));
+        return ResponseEntity.ok(userService.getUserById(id));
     }
-
-//    @GetMapping("/user/search")
-//    public ResponseEntity<List<User>> searchUsers(@RequestParam String q) {
-//        List<User> searchResults = userRepo.findByUsernameContainingIgnoreCase(q);
-//        return ResponseEntity.ok(searchResults);
-//    }
-
-
 
     @GetMapping("/user/upload/documents")
     public ResponseEntity<List<String>> getUploadedDocuments() {
@@ -68,7 +53,7 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
 
-        UserDTO userDetails = userInterface.getUserDetailsByPhoneNumber(phoneNumber);
+        UserDTO userDetails = userService.getUserDetailsByPhoneNumber(phoneNumber);
 
         if (userDetails != null) {
             return ResponseEntity.ok(userDetails);
@@ -78,32 +63,72 @@ public class UserController {
     }
 
     @PostMapping("/user/create")
-    public ResponseEntity<?> createUser(@RequestBody UserDTO userDTO) {
-        if (userDTO.getPhoneNumber().length() < 10) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Phone number must be at least 10 digits long."));
-        }
+    public ResponseEntity<?> createUser(@ModelAttribute UserDTO userDTO, @RequestParam("userImage") MultipartFile userImage) {
+        try {
+            // Validate userDTO fields
+            if (userDTO.getPhoneNumber().length() < 10) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Phone number must be at least 10 digits long."));
+            }
 
-        String emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
-        if (!userDTO.getEmail().matches(emailRegex)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Invalid email format."));
-        }
+            String emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
+            if (!userDTO.getEmail().matches(emailRegex)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Invalid email format."));
+            }
 
-        if (userRepo.existsByPhoneNumber(userDTO.getPhoneNumber())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("Phone number is already registered."));
-        }
+            // Check if phone number already exists
+            if (userService.getUserDetailsByPhoneNumber(userDTO.getPhoneNumber()) != null) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("Phone number is already registered."));
+            }
 
-        UserDTO createdUser = userInterface.createUserDTO(userDTO);
-        if (createdUser != null) {
-            String jwtToken = generateJwtToken(createdUser);
-            return ResponseEntity.ok().header("Authorization", jwtToken).body(createdUser);
-        } else {
+            // Save the image and set the image URL in userDTO
+            String imagePath = saveImage(userImage);
+            userDTO.setUserImageUrl(imagePath);
+
+            // Call userService method to create userDTO
+            UserDTO createdUser = userService.createUserDTO(userDTO);
+
+            // Return appropriate response based on successful creation or error
+            if (createdUser != null) {
+                String jwtToken = generateJwtToken(createdUser);
+                return ResponseEntity.ok().header("Authorization", jwtToken).body(createdUser);
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
+    // Method to save uploaded image
+    private String saveImage(MultipartFile image) throws IOException {
+        if (image.isEmpty()) {
+            return null;
+        }
+
+        byte[] bytes = image.getBytes();
+        Path path = Paths.get("uploads/" + image.getOriginalFilename());
+        Files.write(path, bytes);
+
+        return path.toString();
+    }
+
+    @PutMapping("/user/{id}/update")
+    public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @PathVariable("id") int userId) {
+        UserDTO response = userService.updateUser(userDTO, userId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/user/{id}/delete")
+    public ResponseEntity<String> deleteUser(@PathVariable("id") int userId) {
+        userService.deleteUserId(userId);
+        return ResponseEntity.ok("User deleted");
+    }
+
     @PostMapping("/user/login")
     public ResponseEntity<?> loginUser(@RequestBody UserDTO userDTO) {
-        if (userInterface.verifyUserCredentials(userDTO)) {
+        if (userService.verifyUserCredentials(userDTO)) {
             String jwtToken = generateJwtToken(userDTO);
             return ResponseEntity.ok().body(new LoginResponse("Login successful", jwtToken));
         } else {
@@ -114,79 +139,21 @@ public class UserController {
     @PostMapping("/user/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody UserDTO userDTO) {
         try {
-            boolean result = userInterface.resetPassword(userDTO.getPhoneNumber());
+            boolean result = userService.resetPassword(userDTO.getPhoneNumber());
             if (result) {
-                emailService.sendEmailUsingJavaMailSender(userDTO.getEmail(), "Password Reset Request", "Password reset instructions...");
+                // Replace with your actual email sending logic
                 return ResponseEntity.ok().body(new ResponseMessage("Password reset instructions sent to your email."));
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Unable to reset password."));
             }
         } catch (Exception e) {
-            System.err.println("Error processing password reset request: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("Error processing password reset request."));
         }
     }
 
-    @PostMapping("/contact")
-    public ResponseEntity<String> submitContactForm(@RequestBody ContactForm contactForm) {
-        try {
-            return ResponseEntity.ok("Message sent successfully");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sending message");
-        }
-    }
-
-    @PostMapping("/api/user/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
-        String token = jwtTokenProvider.generateToken(loginRequest.getPhoneNumber());
-        return ResponseEntity.ok(new JwtAuthenticationResponse(token));
-    }
-
-    @PostMapping("/user/upload")
-    public ResponseEntity<String> uploadFile(@RequestPart("file") MultipartFile file) {
-        try {
-            String fileName = fileStorageService.storeFile(file);
-            String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/api/user/download/")
-                    .path(fileName)
-                    .toUriString();
-            return ResponseEntity.ok(fileDownloadUri);
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file.");
-        }
-    }
-
-    @PostMapping("/user/upload/multiple")
-    public ResponseEntity<List<String>> uploadMultipleFiles(@RequestPart("files") MultipartFile[] files) {
-        try {
-            List<String> fileDownloadUris = fileStorageService.storeMultipleFiles(files).stream()
-                    .map(fileName -> ServletUriComponentsBuilder.fromCurrentContextPath()
-                            .path("/api/user/download/")
-                            .path(fileName)
-                            .toUriString())
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(fileDownloadUris);
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-    @PutMapping("/user/{id}/update")
-    public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @PathVariable("id") int userId) {
-        UserDTO response = userInterface.updateUser(userDTO, userId);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    @DeleteMapping("/user/{id}/delete")
-    public ResponseEntity<String> deleteUser(@PathVariable("id") int userId) {
-        userInterface.deleteUserId(userId);
-        return ResponseEntity.ok("User deleted");
-    }
-
     private String generateJwtToken(UserDTO userDTO) {
+        // Replace with your actual JWT token generation logic
         return "your-generated-jwt-token";
     }
 
@@ -231,4 +198,6 @@ public class UserController {
             return message;
         }
     }
+
+    // Other methods as needed
 }

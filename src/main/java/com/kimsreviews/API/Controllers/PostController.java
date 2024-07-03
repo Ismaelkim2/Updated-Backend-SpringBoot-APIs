@@ -1,9 +1,14 @@
 package com.kimsreviews.API.Controllers;
 
 import com.kimsreviews.API.DTO.PostDTO;
-import com.kimsreviews.API.DTO.UserDTO;
+import com.kimsreviews.API.Repository.PostRepo;
+import com.kimsreviews.API.Repository.UserRepo;
 import com.kimsreviews.API.Services.PostService;
 import com.kimsreviews.API.Services.UserMapper;
+import com.kimsreviews.API.models.Post;
+import com.kimsreviews.API.models.User;
+import jakarta.transaction.Transactional;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -25,10 +31,18 @@ public class PostController {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private PostRepo postRepo;
+
+    @Autowired
+    UserRepo userRepo;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
     @GetMapping
     public List<PostDTO> getPosts() {
         List<PostDTO> postDTOs = postService.getAllPosts();
-
         return postDTOs;
     }
 
@@ -103,12 +117,42 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/likes")
-    public ResponseEntity<Void> incrementLikes(@PathVariable Long id) {
-        postService.incrementLikes(id);
-        return ResponseEntity.ok().build();
+    @Transactional
+    @PostMapping("/{postId}/likes")
+    public ResponseEntity<PostDTO> incrementLikes(
+            @PathVariable Long postId,
+            @RequestParam Long userId) {
+        Optional<Post> optionalPost = postRepo.findById(postId);
+        if (optionalPost.isPresent()) {
+            Post post = optionalPost.get();
+            Optional<User> optionalUser = userRepo.findById(Math.toIntExact(userId));
+            if (optionalUser.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            User user = optionalUser.get();
+
+            // Check if the user has already liked the post
+//            if (post.getLikedBy().contains(user)) {
+//                return ResponseEntity.badRequest().body("User has already liked this post.");
+//            }
+
+            post.getLikedBy().add(user);
+            post.setLikes(post.getLikes() + 1);
+
+            Post updatedPost = postRepo.save(post);
+            PostDTO postDTO = convertToDTO(updatedPost);
+            return ResponseEntity.ok(postDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
+    // Other methods in your PostController
+
+    private PostDTO convertToDTO(Post post) {
+        // Implement your conversion logic here
+        return null; // Replace with actual conversion logic
+    }
     @PostMapping("/{id}/views")
     public ResponseEntity<Void> incrementViews(@PathVariable Long id) {
         postService.incrementViews(id);
