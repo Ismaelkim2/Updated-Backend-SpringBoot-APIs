@@ -1,6 +1,7 @@
 package com.kimsreviews.API.DTO;
 
 import com.kimsreviews.API.models.Post;
+import com.kimsreviews.API.models.User;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -43,13 +44,12 @@ public class PostDTO {
         this.userDTO = userDTO;
     }
 
-    public void setUser(UserDTO userDTO) {
+    // Ensure setters and getters are consistent
+    public void setUserDTO(UserDTO userDTO) {
         this.userDTO = userDTO;
     }
 
-    public UserDTO getUser() {
+    public UserDTO getUserDTO() {
         return userDTO;
     }
-
-
 }

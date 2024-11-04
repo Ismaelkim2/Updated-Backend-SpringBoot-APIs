@@ -12,4 +12,7 @@ public interface PostRepo extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p JOIN FETCH p.user")
     List<Post> findAllWithUser();
+
+    @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.id = :id")
+    Post findByIdWithUser(Long id);
 }

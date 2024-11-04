@@ -3,37 +3,38 @@ package com.kimsreviews.API.Services;
 import com.kimsreviews.API.DTO.UserDTO;
 import com.kimsreviews.API.Exceptions.UserNotFoundEXceptions;
 import com.kimsreviews.API.Repository.UserRepo;
-import com.kimsreviews.API.models.Post;
 import com.kimsreviews.API.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class UserServiceImpl implements UserInterface {
+public class UserServiceImpl implements UserInterface, UserDetailsService {
 
     private final UserRepo userRepo;
     private final JavaMailSender emailSender;
-    private final FileStorageService fileStorageService; // Inject FileStorageService
+    private final FileStorageService fileStorageService;
+    private final UserMapper userMapper;
 
     @Autowired
-    public UserServiceImpl(UserRepo userRepo, JavaMailSender emailSender, FileStorageService fileStorageService) {
+    public UserServiceImpl(UserRepo userRepo, JavaMailSender emailSender, FileStorageService fileStorageService, UserMapper userMapper) {
         this.userRepo = userRepo;
         this.emailSender = emailSender;
         this.fileStorageService = fileStorageService;
+        this.userMapper = userMapper;
     }
-    @Autowired
-    UserMapper userMapper;
 
     @Override
     public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) {
-        // Convert UserDTO to User entity and save to database
         User user = mapToEntity(userDTO);
 
         // Save files if provided
@@ -42,8 +43,6 @@ public class UserServiceImpl implements UserInterface {
         }
 
         userRepo.save(user);
-
-        // Convert User entity back to UserDTO and return
         return mapToDTO(user);
     }
 
@@ -77,10 +76,21 @@ public class UserServiceImpl implements UserInterface {
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setAbove18(userDTO.isAbove18());
         user.setPassword(userDTO.getPassword());
-        user.setEmail(userDTO.getEmail()); // Ensure email is updated
+        user.setEmail(userDTO.getEmail());
 
         User updatedUser = userRepo.save(user);
         return mapToDTO(updatedUser);
+    }
+
+    @Override
+    public void updateUserPasswords() {
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        List<User> users = userRepo.findAll();
+        for (User user : users) {
+            String hashedPassword = passwordEncoder.encode(user.getPassword());
+            user.setPassword(hashedPassword);
+            userRepo.save(user);
+        }
     }
 
     @Override
@@ -91,11 +101,23 @@ public class UserServiceImpl implements UserInterface {
     }
 
     @Override
-    public boolean verifyUserCredentials(UserDTO userDTO) {
-        // Retrieve user information from the database based on the provided phone number
-        User storedUser = userRepo.findByPhoneNumber(userDTO.getPhoneNumber());
+    public UserDetails loadUserByUsername(String phoneNumber) throws UsernameNotFoundException {
+        System.out.println("Searching for user with phone number: " + phoneNumber);
+        User user = userRepo.findByPhoneNumber(phoneNumber);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found with phone number: " + phoneNumber);
+        }
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getPhoneNumber())
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
+    }
 
-        // Check if user exists and passwords match
+
+    @Override
+    public boolean verifyUserCredentials(UserDTO userDTO) {
+        User storedUser = userRepo.findByPhoneNumber(userDTO.getPhoneNumber());
         return storedUser != null && storedUser.getPassword().equals(userDTO.getPassword());
     }
 
@@ -115,30 +137,21 @@ public class UserServiceImpl implements UserInterface {
 
     @Override
     public UserDTO getUserDetailsByPhoneNumber(String phoneNumber) {
-        // Perform database query to fetch user details based on the phone number
         User user = userRepo.findByPhoneNumber(phoneNumber);
-
-        // Check if user exists
-        if (user != null) {
-            // Map User entity to UserDTO and return
-            return mapToDTO(user);
-        } else {
-            // If user does not exist, return null or handle the case appropriately
-            return null;
-        }
+        return user != null ? mapToDTO(user) : null;
     }
 
     private UserDTO mapToDTO(User user) {
         UserDTO userDTO = new UserDTO();
-        userDTO.setId(user.getId());
+        userDTO.setId((long) user.getId());
         userDTO.setFirstName(user.getFirstName());
         userDTO.setLastName(user.getLastName());
-        userDTO.setEmail(user.getEmail()); // Ensure email is correctly mapped
+        userDTO.setEmail(user.getEmail());
         userDTO.setPhoneNumber(user.getPhoneNumber());
         userDTO.setAbove18(user.isAbove18());
         userDTO.setPassword(user.getPassword());
-        userDTO.setUserImageUrl(user.getUserImageUrl()); // Ensure userImageUrl is correctly mapped
-        userDTO.setDocumentUrls(user.getDocumentUrls()); // Map document URLs if needed
+        userDTO.setUserImageUrl(user.getUserImageUrl());
+        userDTO.setDocumentUrls(user.getDocumentUrls());
         return userDTO;
     }
 
@@ -146,27 +159,24 @@ public class UserServiceImpl implements UserInterface {
         User user = new User();
         user.setFirstName(userDTO.getFirstName());
         user.setLastName(userDTO.getLastName());
-        user.setEmail(userDTO.getEmail()); // Ensure email is correctly mapped
+        user.setEmail(userDTO.getEmail());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setAbove18(userDTO.isAbove18());
         user.setPassword(userDTO.getPassword());
-        user.setUserImageUrl(userDTO.getUserImageUrl()); // Ensure userImageUrl is correctly mapped
+        user.setUserImageUrl(userDTO.getUserImageUrl());
         return user;
     }
 
     private String generateResetToken() {
         // Generate a secure token for password reset
-        return "123456"; // Replace with actual token generation logic
+        return " "; // Replace with actual token generation logic
     }
 
     private void sendResetTokenEmail(String email, String token) {
-        // Create a Simple MailMessage.
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Password Reset Token");
         message.setText("Your password reset token is: " + token);
-
-        // Send Message!
         emailSender.send(message);
     }
 }

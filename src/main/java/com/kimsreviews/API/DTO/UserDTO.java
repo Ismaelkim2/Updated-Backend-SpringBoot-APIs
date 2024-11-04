@@ -4,11 +4,11 @@ import com.kimsreviews.API.models.User;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class UserDTO {
-    private int id;
-    private String firstName;
+    private Long id;    private String firstName;
     private String lastName;
     private String phoneNumber;
     private String email;
@@ -16,7 +16,9 @@ public class UserDTO {
     private boolean above18;
     private String userImageUrl;
     private String createdBy;
-    private List<String> documentUrls; // Assuming documentUrls is a list of strings
+    private List<String> documentUrls;
+//    private Set<String> roles;
+
 
     public void setDocumentUrls(List<String> documentUrls) {
         this.documentUrls = documentUrls;
@@ -29,7 +31,7 @@ public class UserDTO {
     public UserDTO() {}
 
     public UserDTO(User user) {
-        this.id = user.getId();
+        this.id = (long) user.getId();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.phoneNumber = user.getPhoneNumber();

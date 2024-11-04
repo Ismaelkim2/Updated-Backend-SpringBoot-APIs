@@ -6,7 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -26,6 +28,8 @@ public class User {
     private boolean isVerified;
     private boolean above18;
     private String userImageUrl;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> roles= new HashSet<>();
 
     public String getCreatedBy() {
         return createdBy;

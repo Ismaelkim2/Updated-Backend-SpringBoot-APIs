@@ -4,6 +4,10 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.time.Duration;
+
+import static org.springframework.http.CacheControl.maxAge;
+
 @Configuration
 @EnableWebMvc
 public class CorsConfig implements WebMvcConfigurer {
@@ -12,7 +16,9 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins("http://localhost:4200") // Allow Angular development server
-                .allowedMethods("GET", "POST", "PUT", "DELETE") // Allowed HTTP methods
+                .allowedMethods("GET", "POST", "PUT", "DELETE","OPTIONS") // Allowed HTTP methods
                 .allowedHeaders("*"); // Allowed headers
+
+                maxAge(Duration.ofDays(3600));
     }
 }
