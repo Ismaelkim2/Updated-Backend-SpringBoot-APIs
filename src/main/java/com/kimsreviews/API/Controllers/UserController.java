@@ -174,8 +174,8 @@ public class UserController {
             return null;
         }
 
-        // Define the path to store the image and ensure the directory exists
-        Path uploadDir = Paths.get("uploads");
+        // Use a relative path to store images in the app's working directory
+        Path uploadDir = Paths.get("uploads");  // Relative directory path
         if (!Files.exists(uploadDir)) {
             Files.createDirectories(uploadDir);  // Create the directory if it doesn't exist
         }
@@ -187,9 +187,10 @@ public class UserController {
         // Save the image file to the server
         Files.write(path, image.getBytes());
 
-        // Return the relative file path, which should be publicly accessible
+        // Return the relative file path
         return "uploads/" + fileName;
     }
+
 
 
     @PreAuthorize("hasRole('ROLE_ADMIN','ROLE_USER')")

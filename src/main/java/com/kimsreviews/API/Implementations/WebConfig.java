@@ -24,7 +24,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Using a relative path for cloud deployment (Render)
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/", "file:///C:/Users/User/OneDrive/Desktop/My stuffs/uploads/");
+                .addResourceLocations("file:uploads/");  // Stores in the 'uploads' directory relative to the project root
     }
+
 }
