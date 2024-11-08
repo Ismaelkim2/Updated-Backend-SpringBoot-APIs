@@ -26,7 +26,10 @@ public class User {
     private String password;
     private String email;
     private String userImageUrl;
+    @Column(name = "is_verified", nullable = false)
+    private Boolean isVerified = false;
     private boolean above18;
+
 
 
 

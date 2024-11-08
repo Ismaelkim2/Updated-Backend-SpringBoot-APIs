@@ -1,6 +1,7 @@
 package com.kimsreviews.API.DTO;
 
 import com.kimsreviews.API.models.User;
+import jakarta.persistence.Column;
 import lombok.Data;
 
 import java.util.List;
@@ -16,7 +17,6 @@ public class UserDTO {
     private boolean above18;
     private String userImageUrl;
     private String createdBy;
-    private boolean isVerified;
     private List<String> documentUrls;
 //    private Set<String> roles;
 
