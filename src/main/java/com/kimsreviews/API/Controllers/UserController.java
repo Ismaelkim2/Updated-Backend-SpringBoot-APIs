@@ -174,11 +174,21 @@ public class UserController {
             return null;
         }
 
-        byte[] bytes = image.getBytes();
-        Path path = Paths.get("uploads/" + image.getOriginalFilename());
-        Files.write(path, bytes);
+        // Define the path to store the image and ensure the directory exists
+        Path uploadDir = Paths.get("uploads");
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);  // Create the directory if it doesn't exist
+        }
 
-        return path.toString();
+        // Ensure unique filenames to avoid overwriting existing files
+        String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
+        Path path = uploadDir.resolve(fileName);
+
+        // Save the image file to the server
+        Files.write(path, image.getBytes());
+
+        // Return the relative file path, which should be publicly accessible
+        return "uploads/" + fileName;
     }
 
 
