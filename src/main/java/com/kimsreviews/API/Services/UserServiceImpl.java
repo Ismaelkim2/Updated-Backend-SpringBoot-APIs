@@ -77,7 +77,6 @@ public class UserServiceImpl implements UserInterface, UserDetailsService {
         user.setAbove18(userDTO.isAbove18());
         user.setPassword(userDTO.getPassword());
         user.setEmail(userDTO.getEmail());
-        user.setIsVerified(false);
         User updatedUser = userRepo.save(user);
         return mapToDTO(updatedUser);
     }
@@ -152,7 +151,6 @@ public class UserServiceImpl implements UserInterface, UserDetailsService {
         userDTO.setPassword(user.getPassword());
         userDTO.setUserImageUrl(user.getUserImageUrl());
         userDTO.setDocumentUrls(user.getDocumentUrls());
-        userDTO.setIsVerified(false);
         return userDTO;
     }
 

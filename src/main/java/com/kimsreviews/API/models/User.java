@@ -27,7 +27,7 @@ public class User {
     private String email;
     private String userImageUrl;
     private boolean above18;
-    private boolean setIsVerified;
+
 
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -49,6 +49,5 @@ public class User {
         return null; // Placeholder for future implementation
     }
 
-    public void setIsVerified(boolean b) {
-    }
+
 }

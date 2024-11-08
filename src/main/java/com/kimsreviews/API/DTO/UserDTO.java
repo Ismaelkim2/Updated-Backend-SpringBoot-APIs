@@ -43,6 +43,5 @@ public class UserDTO {
         this.createdBy=user.getCreatedBy();
     }
 
-    public void setIsVerified(boolean b) {
-    }
+
 }
