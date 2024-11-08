@@ -42,5 +42,4 @@ public class UserDTO {
         this.createdBy=user.getCreatedBy();
     }
 
-    // Other methods as needed
 }

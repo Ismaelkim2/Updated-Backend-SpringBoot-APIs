@@ -9,8 +9,6 @@ RUN mvn dependency:go-offline
 # Copy the source code
 COPY src ./src
 
-RUN apt-get update && apt-get install -y git
-
 # Build the application, skipping tests
 RUN mvn clean package -DskipTests
 

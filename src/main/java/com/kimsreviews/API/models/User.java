@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,6 +13,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Table(name = "users")
 public class User {
 
     @Id
@@ -25,87 +25,26 @@ public class User {
     private String phoneNumber;
     private String password;
     private String email;
-    private boolean isVerified;
+//    private boolean isVerified;
     private boolean above18;
     private String userImageUrl;
+
     @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> roles= new HashSet<>();
+    private Set<String> roles = new HashSet<>();
 
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    private  String createdBy;
+    private String createdBy;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Post> posts;
 
     private String resetToken;
 
-    // Getters and setters
-
-    public String getResetToken() {
-        return resetToken;
-    }
-
-    public void setResetToken(String resetToken) {
-        this.resetToken = resetToken;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public boolean isVerified() {
-        return isVerified;
-    }
-
-    public void setVerified(boolean verified) {
-        isVerified = verified;
-    }
-
-    public boolean isAbove18() {
-        return above18;
-    }
-
-    public void setAbove18(boolean above18) {
-        this.above18 = above18;
-    }
-
-    public List<Post> getPosts() {
-        return posts;
-    }
-
-    public void setPosts(List<Post> posts) {
-        this.posts = posts;
-    }
-
-    public String getUserImageUrl() {
-        return userImageUrl;
-    }
-
-    public void setUserImageUrl(String userImageUrl) {
-        this.userImageUrl = userImageUrl;
-    }
-
+    // Optional getters and setters (if you want custom behavior)
     public void setDocumentUrls(List<String> documentUrls) {
-        // Implement as needed
-        // Example implementation:
-        // this.documentUrls = documentUrls;
+        // Placeholder for document URLs, if needed
     }
 
     public List<String> getDocumentUrls() {
-        // Implement as needed
-        // Example implementation:
-        // return this.documentUrls;
-        return null; // Placeholder
+        return null; // Placeholder for future implementation
     }
 }
