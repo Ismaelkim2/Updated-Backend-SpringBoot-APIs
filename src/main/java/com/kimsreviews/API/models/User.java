@@ -25,9 +25,10 @@ public class User {
     private String phoneNumber;
     private String password;
     private String email;
-//    private boolean isVerified;
-    private boolean above18;
     private String userImageUrl;
+    private boolean above18;
+    private boolean setIsVerified;
+
 
     @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> roles = new HashSet<>();
@@ -46,5 +47,8 @@ public class User {
 
     public List<String> getDocumentUrls() {
         return null; // Placeholder for future implementation
+    }
+
+    public void setIsVerified(boolean b) {
     }
 }

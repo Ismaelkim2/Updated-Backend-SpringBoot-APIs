@@ -16,6 +16,7 @@ public class UserDTO {
     private boolean above18;
     private String userImageUrl;
     private String createdBy;
+    private boolean isVerified;
     private List<String> documentUrls;
 //    private Set<String> roles;
 
@@ -42,4 +43,6 @@ public class UserDTO {
         this.createdBy=user.getCreatedBy();
     }
 
+    public void setIsVerified(boolean b) {
+    }
 }
