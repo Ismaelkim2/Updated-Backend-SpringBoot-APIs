@@ -15,7 +15,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:4200") // Allow Angular development server
+                .allowedOrigins("http://localhost:4200", "https://agri-business-market-hub.onrender.com")
                 .allowedMethods("GET", "POST", "PUT", "DELETE","OPTIONS") // Allowed HTTP methods
                 .allowedHeaders("*"); // Allowed headers
 
