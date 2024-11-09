@@ -34,9 +34,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-
-@CrossOrigin(origins = {"http://localhost:4200", "https://agri-business-market-hub.onrender.com"})
-
 public class UserController {
 
     private final UserInterface userService;
