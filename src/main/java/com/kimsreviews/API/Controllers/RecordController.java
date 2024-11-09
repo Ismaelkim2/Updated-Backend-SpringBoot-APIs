@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/records")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = {"http://localhost:4200", "https://agri-business-market-hub.onrender.com"})
 public class RecordController {
     @Autowired
     private RecordService recordService;

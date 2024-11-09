@@ -46,7 +46,7 @@ public class PostController {
     @Autowired
     private ModelMapper modelMapper;
 
-    @CrossOrigin("http://localhost:4200")
+    @CrossOrigin(origins = {"http://localhost:4200", "https://agri-business-market-hub.onrender.com"})
     @GetMapping
     public ResponseEntity<List<PostDTO>> getPosts() {
         try {
