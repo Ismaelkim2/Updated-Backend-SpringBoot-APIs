@@ -1,5 +1,4 @@
 package com.kimsreviews.API.Implementations;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -13,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
     private String frontendUrl;
 
     @Value("${file.upload-dir}")
-    private String uploadDir; // This will read the upload path from application.properties
+    private String uploadDir;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -27,12 +26,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Use the value of file.upload-dir to map the upload path as a static resource
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + uploadDir + "/");
-
-        // You can also configure other static resources if needed:
-        // registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
     }
 }
-
