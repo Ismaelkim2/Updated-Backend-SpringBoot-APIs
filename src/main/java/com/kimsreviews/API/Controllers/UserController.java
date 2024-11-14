@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
+@CrossOrigin(origins = "https://brishkimecoeggs.onrender.com")
 @RequestMapping("/api")
 public class UserController {
 
