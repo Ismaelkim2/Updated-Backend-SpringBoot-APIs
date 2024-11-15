@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/expenses/**").permitAll()
                         .requestMatchers("/api/mortalities/**").permitAll()
                         .requestMatchers("/api/workers/**").permitAll()
+                        .requestMatchers("/api/eggs/**").permitAll()
                         .requestMatchers("/api/records/**").permitAll()
                         .requestMatchers("/api/user/validate-token").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
