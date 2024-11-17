@@ -3,6 +3,7 @@ package com.kimsreviews.API.Controllers;
 import com.kimsreviews.API.Services.EggsRecordService;
 import com.kimsreviews.API.models.EggsRecord;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,30 +13,25 @@ import java.util.List;
 @RequiredArgsConstructor
 @CrossOrigin(origins = "https://brishkimecoeggs.onrender.com")
 public class EggsRecordController {
-    private final EggsRecordService service;
+    @Autowired
+    private EggsRecordService service;
 
-    @GetMapping("/records")
+    @GetMapping
     public List<EggsRecord> getAllRecords() {
         return service.getAllRecords();
     }
 
-    @GetMapping("/records/{id}")
-    public EggsRecord getRecordById(@PathVariable Long id) {
-        return service.getRecordById(id);
+    @PostMapping
+    public EggsRecord addRecord(@RequestBody EggsRecord record) {
+        return service.addRecord(record);
     }
 
-    @PostMapping("/records")
-    public EggsRecord createRecord(@RequestBody EggsRecord record) {
-        return service.saveRecord(record);
-    }
-
-    @PutMapping("/records/{id}")
+    @PutMapping("/{id}")
     public EggsRecord updateRecord(@PathVariable Long id, @RequestBody EggsRecord record) {
-        record.setId(id);
-        return service.saveRecord(record);
+        return service.updateRecord(id, record);
     }
 
-    @DeleteMapping("/records/{id}")
+    @DeleteMapping("/{id}")
     public void deleteRecord(@PathVariable Long id) {
         service.deleteRecord(id);
     }
