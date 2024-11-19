@@ -2,33 +2,36 @@ package com.kimsreviews.API.Services;
 
 import com.kimsreviews.API.Repository.EggsRecordRepository;
 import com.kimsreviews.API.models.EggsRecord;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Service
 public class EggsRecordService {
     @Autowired
-    private EggsRecordRepository repository;
+    private EggsRecordRepository eggsRecordRepository;
 
     public List<EggsRecord> getAllRecords() {
-        return repository.findAll();
+        return eggsRecordRepository.findAll();
     }
 
-    public EggsRecord addRecord(EggsRecord record) {
-        return repository.save(record);
+    public void addRecord(EggsRecord record) {
+        eggsRecordRepository.save(record);
     }
 
     public EggsRecord updateRecord(Long id, EggsRecord record) {
-        EggsRecord existingRecord = repository.findById(id)
+        EggsRecord existingRecord = eggsRecordRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Record not found"));
         existingRecord.setDate(record.getDate());
-        existingRecord.setEggCount(record.getEggCount());
-        return repository.save(existingRecord);
+        existingRecord.setEggsCount(record.getEggsCount());
+        return eggsRecordRepository.save(existingRecord);
     }
 
     public void deleteRecord(Long id) {
-        repository.deleteById(id);
+        if (!eggsRecordRepository.existsById(id)) {
+            throw new RuntimeException("Record not found");
+        }
+        eggsRecordRepository.deleteById(id);
     }
 }
