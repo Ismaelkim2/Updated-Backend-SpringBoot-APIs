@@ -9,6 +9,7 @@ import java.time.LocalDate;
 
 @Entity
 @Data
+//@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "eggs_record")
