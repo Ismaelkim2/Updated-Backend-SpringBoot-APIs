@@ -23,12 +23,53 @@ public class EggsRecordController {
 
     @PostMapping
     public ResponseEntity<?> addRecord(@RequestBody EggsRecord eggsRecord) {
+        // Validate the eggsCount and date fields
         if (eggsRecord.getEggsCount() == null || eggsRecord.getDate() == null) {
-            return ResponseEntity.badRequest().body("Eggs count and date are required");
+            return ResponseEntity.badRequest().body(new ErrorResponse("Eggs count and date are required"));
         }
+
         System.out.println("Received Record: " + eggsRecord);
+
+        // Call the service to save the record
         eggsRecordService.addRecord(eggsRecord);
-        return ResponseEntity.ok("Record added successfully");
+
+        // Return a structured JSON response
+        SuccessResponse response = new SuccessResponse("Record added successfully");
+        return ResponseEntity.ok(response);
+    }
+
+    // Success response structure
+    public static class SuccessResponse {
+        private String message;
+
+        public SuccessResponse(String message) {
+            this.message = message;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+    }
+
+    // Error response structure
+    public static class ErrorResponse {
+        private String error;
+
+        public ErrorResponse(String error) {
+            this.error = error;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public void setError(String error) {
+            this.error = error;
+        }
     }
 
     @PutMapping("/{id}")
