@@ -1,5 +1,6 @@
 package com.kimsreviews.API.Services;
 
+import com.kimsreviews.API.DTO.WeeklyEggRecord;
 import com.kimsreviews.API.Repository.EggsRecordRepository;
 import com.kimsreviews.API.models.EggsRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,10 +54,30 @@ public class EggsRecordService {
     }
 
 
-    public List<EggsRecord> getPreviousRecords() {
+    public List<WeeklyEggRecord> getPreviousRecords() {
         LocalDate today = LocalDate.now();
         LocalDate startOfWeek = today.with(WeekFields.ISO.getFirstDayOfWeek());
-        return eggsRecordRepository.findByDateBefore(startOfWeek);
+
+        List<EggsRecord> records = eggsRecordRepository.findByDateBefore(startOfWeek);
+
+        // Group by week and aggregate eggsCount and brokenEggsCount
+        return records.stream()
+                .collect(Collectors.groupingBy(
+                        record -> record.getDate().with(WeekFields.ISO.getFirstDayOfWeek())
+                ))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+                    LocalDate weekStart = entry.getKey();
+                    LocalDate weekEnd = weekStart.plusDays(6);
+
+                    int totalEggs = entry.getValue().stream().mapToInt(EggsRecord::getEggsCount).sum();
+                    int brokenEggs = 0; // Placeholder, assuming broken eggs data is not stored in EggsRecord
+
+                    return new WeeklyEggRecord(weekStart, weekEnd, totalEggs, brokenEggs);
+                })
+                .sorted((w1, w2) -> w2.getStartOfWeek().compareTo(w1.getStartOfWeek())) // Sort by week start descending
+                .collect(Collectors.toList());
     }
 
     public EggsRecord getCurrentWeekData() {

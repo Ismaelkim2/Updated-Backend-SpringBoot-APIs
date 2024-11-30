@@ -1,5 +1,6 @@
 package com.kimsreviews.API.Controllers;
 
+import com.kimsreviews.API.DTO.WeeklyEggRecord;
 import com.kimsreviews.API.Services.EggsRecordService;
 import com.kimsreviews.API.models.EggsRecord;
 import lombok.RequiredArgsConstructor;
@@ -74,8 +75,8 @@ public class EggsRecordController {
     }
 
     @GetMapping("/previous-records")
-    public ResponseEntity<List<EggsRecord>> getPreviousRecords() {
-        List<EggsRecord> previousRecords = eggsRecordService.getPreviousRecords();
+    public ResponseEntity<List<WeeklyEggRecord>> getPreviousRecords() {
+        List<WeeklyEggRecord> previousRecords = eggsRecordService.getPreviousRecords();
         return ResponseEntity.ok(previousRecords);
     }
 
