@@ -20,8 +20,10 @@ public class EggsRecordController {
     @GetMapping
     public ResponseEntity<List<EggsRecord>> getAllRecords() {
         List<EggsRecord> records = eggsRecordService.getAllRecords();
+        System.out.println("Returning Records: " + records);
         return ResponseEntity.ok(records);
     }
+
 
     @PostMapping
     public ResponseEntity<?> addRecord(@RequestBody EggsRecord eggsRecord) {
@@ -38,6 +40,55 @@ public class EggsRecordController {
         // Return a structured JSON response
         SuccessResponse response = new SuccessResponse("Record added successfully");
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateRecord(@PathVariable Long id, @RequestBody EggsRecord record) {
+        try {
+            // Check if record is valid
+            if (record == null || !isValid(record)) {
+                throw new IllegalArgumentException("Invalid record data");
+            }
+
+            EggsRecord updatedRecord = eggsRecordService.updateRecord(id, record);
+            return ResponseEntity.ok(updatedRecord);
+        } catch (RuntimeException ex) {
+            // Log the error for better visibility
+            System.out.println("Error updating record: " + ex.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse("Failed to update record"));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteRecord(@PathVariable Long id) {
+        try {
+            eggsRecordService.deleteRecord(id);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Record deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("error", ex.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/previous-records")
+    public ResponseEntity<List<EggsRecord>> getPreviousRecords() {
+        List<EggsRecord> previousRecords = eggsRecordService.getPreviousRecords();
+        return ResponseEntity.ok(previousRecords);
+    }
+
+    @GetMapping("/current-week")
+    public ResponseEntity<EggsRecord> getCurrentWeekData() {
+        EggsRecord currentWeekData = eggsRecordService.getCurrentWeekData();
+        return ResponseEntity.ok(currentWeekData);
+    }
+
+    @PostMapping("/archive-week")
+    public ResponseEntity<?> archiveCurrentWeekData(@RequestBody List<EggsRecord> records) {
+        eggsRecordService.archiveCurrentWeekData();
+        return ResponseEntity.ok(new SuccessResponse("Current week data archived successfully"));
     }
 
     // Success response structure
@@ -74,41 +125,9 @@ public class EggsRecordController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<EggsRecord> updateRecord(@PathVariable Long id, @RequestBody EggsRecord record) {
-        try {
-            // Check if record is valid
-            if (record == null || !isValid(record)) {
-                throw new IllegalArgumentException("Invalid record data");
-            }
-
-            EggsRecord updatedRecord = eggsRecordService.updateRecord(id, record);
-            return ResponseEntity.ok(updatedRecord);
-        } catch (RuntimeException ex) {
-            // Log the error for better visibility
-            System.out.println("Error updating record: " + ex.getMessage());
-            return ResponseEntity.badRequest().body(null);
-        }
-    }
-
     private boolean isValid(EggsRecord record) {
         // Implement necessary validation checks, e.g., non-null fields
         return record != null && record.getEggsCount() != null;
     }
-
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteRecord(@PathVariable Long id) {
-        try {
-            eggsRecordService.deleteRecord(id);
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "Record deleted successfully");
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException ex) {
-            Map<String, String> response = new HashMap<>();
-            response.put("error", ex.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
 }
+

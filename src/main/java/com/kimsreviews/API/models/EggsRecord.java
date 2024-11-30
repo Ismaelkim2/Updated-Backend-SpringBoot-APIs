@@ -25,5 +25,9 @@ public class EggsRecord {
 
     @Column(name = "eggs_count", nullable = false)
     private Integer eggsCount;
+
+    @Column(name = "archived", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean archived = false;
+
 }
 
