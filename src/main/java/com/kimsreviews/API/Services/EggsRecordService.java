@@ -5,7 +5,10 @@ import com.kimsreviews.API.Repository.EggsRecordRepository;
 import com.kimsreviews.API.models.EggsRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -33,6 +36,11 @@ public class EggsRecordService {
         record.setArchived(false);
         eggsRecordRepository.save(record);
     }
+
+    public List<EggsRecord> getRecordsByDateRange(LocalDate startDate, LocalDate endDate) {
+        return eggsRecordRepository.findByDateRange(startDate, endDate);
+    }
+
 
 
     public EggsRecord updateRecord(Long id, EggsRecord updatedRecord) {

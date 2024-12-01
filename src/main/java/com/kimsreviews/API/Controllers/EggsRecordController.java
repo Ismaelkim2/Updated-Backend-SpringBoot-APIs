@@ -4,9 +4,12 @@ import com.kimsreviews.API.DTO.WeeklyEggRecord;
 import com.kimsreviews.API.Services.EggsRecordService;
 import com.kimsreviews.API.models.EggsRecord;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,26 @@ public class EggsRecordController {
         SuccessResponse response = new SuccessResponse("Record added successfully");
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/daily-records")
+    public ResponseEntity<?> getDailyRecords(
+            @RequestParam("start") String startDate,
+            @RequestParam("end") String endDate) {
+        try {
+            LocalDate start = LocalDate.parse(startDate);
+            LocalDate end = LocalDate.parse(endDate);
+            if (end.isBefore(start)) {
+                return ResponseEntity.badRequest().body("End date must not be before start date.");
+            }
+            List<EggsRecord> records = eggsRecordService.getRecordsByDateRange(start, end);
+            return ResponseEntity.ok(records);
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().body("Invalid date format. Use 'YYYY-MM-DD'.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + e.getMessage());
+        }
+    }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateRecord(@PathVariable Long id, @RequestBody EggsRecord record) {
