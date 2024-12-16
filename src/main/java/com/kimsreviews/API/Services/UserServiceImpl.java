@@ -39,26 +39,19 @@ public class UserServiceImpl implements UserInterface, UserDetailsService {
     public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) throws Exception {
         User user = mapToEntity(userDTO);
 
-        // Handle image upload using ImageUploadService
         if (files != null && !files.isEmpty()) {
-            // Assuming that the image is the first file in the list
             MultipartFile imageFile = files.get(0);
-
-            // Use ImageUploadService to upload the image and get the URL
-            String imageUrl = imageUploadService.uploadImage(imageFile);  // Upload image to external storage
-            user.setUserImageUrl(imageUrl);  // Set the image URL in the user entity
+            String imageUrl = imageUploadService.uploadImage(imageFile);
+            user.setUserImageUrl(imageUrl);
         }
 
-        // Save user documents if present (skip image files)
-        if (files != null && files.size() > 1) {
-            user.setDocumentUrls(fileStorageService.storeFiles(files.subList(1, files.size()))); // Upload documents if any
-        }
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-        // Save the user entity with the image URL and document URLs (if any)
-        userRepo.save(user);
+        // Save user to the database
+        User savedUser = userRepo.save(user);
 
-        // Return the mapped UserDTO
-        return mapToDTO(user);
+        return mapToDTO(savedUser);
     }
 
 
