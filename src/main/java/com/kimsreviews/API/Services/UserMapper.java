@@ -7,23 +7,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserMapper {
 
-    private User mapToEntity(UserDTO userDTO) {
+    public UserDTO toDTO(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserDTO dto = new UserDTO();
+        dto.setFirstName(user.getFirstName());
+        dto.setLastName(user.getLastName());
+        dto.setEmail(user.getEmail());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setUserImageUrl(user.getUserImageUrl());
+        return dto;
+    }
+
+    public User toEntity(UserDTO dto) {
+        if (dto == null) {
+            return null;
+        }
         User user = new User();
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
-        user.setEmail(userDTO.getEmail());
-        user.setPhoneNumber(userDTO.getPhoneNumber());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setPhoneNumber(dto.getPhoneNumber());
+        user.setUserImageUrl(dto.getUserImageUrl());
         return user;
     }
-
-    private UserDTO mapToDTO(User user) {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setFirstName(user.getFirstName());
-        userDTO.setLastName(user.getLastName());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setPhoneNumber(user.getPhoneNumber());
-        userDTO.setUserImageUrl(user.getUserImageUrl());
-        return userDTO;
-    }
-
 }
