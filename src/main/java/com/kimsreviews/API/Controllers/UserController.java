@@ -5,6 +5,7 @@ import com.kimsreviews.API.Implementations.JwtTokenProvider;
 import com.kimsreviews.API.Implementations.PostNotFoundException;
 import com.kimsreviews.API.Implementations.UnauthorizedException;
 import com.kimsreviews.API.Services.FileStorageService;
+import com.kimsreviews.API.Services.ImageUploadService;
 import com.kimsreviews.API.Services.PostServiceImpl;
 import com.kimsreviews.API.Services.UserInterface;
 import io.jsonwebtoken.Claims;
@@ -39,6 +40,7 @@ public class UserController {
 
     private final UserInterface userService;
     private final FileStorageService fileStorageService;
+    private final ImageUploadService imageUploadService;
 
     @Autowired
     @Lazy
@@ -51,10 +53,11 @@ public class UserController {
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    public UserController(UserInterface userService, FileStorageService fileStorageService, PostServiceImpl postService) {
+    public UserController(UserInterface userService, FileStorageService fileStorageService, PostServiceImpl postService, ImageUploadService imageUploadService) {
         this.userService = userService;
         this.fileStorageService = fileStorageService;
         this.postService = postService;
+        this.imageUploadService=imageUploadService;
     }
 
     @GetMapping("/user")
@@ -141,9 +144,9 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("Phone number is already registered."));
             }
 
-            // Save user image
-            String imagePath = saveImage(userImage);
-            userDTO.setUserImageUrl(imagePath);
+            // Upload the user image using external service
+            String imageUrl = imageUploadService.uploadImage(userImage);
+            userDTO.setUserImageUrl(imageUrl);
 
             // Encrypt password before creating the user
             BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -161,34 +164,11 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    private String saveImage(MultipartFile image) throws IOException {
-        if (image.isEmpty()) {
-            return null;
-        }
-
-        // Use a relative path to store images in the app's working directory
-        Path uploadDir = Paths.get("uploads");  // Relative directory path
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);  // Create the directory if it doesn't exist
-        }
-
-        // Ensure unique filenames to avoid overwriting existing files
-        String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-        Path path = uploadDir.resolve(fileName);
-
-        // Save the image file to the server
-        Files.write(path, image.getBytes());
-
-        // Return the relative file path
-        return "uploads/" + fileName;
-    }
-
 
 
     @PreAuthorize("hasRole('ROLE_ADMIN','ROLE_USER')")

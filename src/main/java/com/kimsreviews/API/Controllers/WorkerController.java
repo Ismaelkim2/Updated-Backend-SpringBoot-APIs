@@ -6,11 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -19,9 +15,6 @@ import java.util.List;
 public class WorkerController {
 
     private final WorkerService workerService;
-
-    @Value("${file.upload-dir}")
-    private String IMAGE_DIRECTORY;
 
     public WorkerController(WorkerService workerService) {
         this.workerService = workerService;
@@ -40,7 +33,7 @@ public class WorkerController {
             @RequestParam("phone") String phone,
             @RequestParam("salary") double salary,
             @RequestParam("status") String status,
-            @RequestParam(value = "image", required = false) MultipartFile image) throws IOException {
+            @RequestParam(value = "image", required = false) MultipartFile image) throws Exception {
 
         // Validate required parameters
         if (name == null || name.isEmpty()) throw new IllegalArgumentException("Name is required");
@@ -55,35 +48,8 @@ public class WorkerController {
         worker.setSalary(salary);
         worker.setStatus(status);
 
-
-        // Handle the image file if provided
-        if (image != null && !image.isEmpty()) {
-            String imageUrl = saveImage(image);
-            worker.setImage(imageUrl);
-        } else {
-            worker.setImage(null);
-        }
-
-        // Save the worker
-        return workerService.saveWorkers(worker);
-    }
-
-    private String saveImage(MultipartFile image) throws IOException {
-        String contentType = image.getContentType();
-        if (!contentType.startsWith("image")) {
-            throw new IllegalArgumentException("File must be an image");
-        }
-
-        File directory = new File(IMAGE_DIRECTORY);
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-
-        String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-        Path filePath = Paths.get(IMAGE_DIRECTORY, fileName);
-        Files.copy(image.getInputStream(), filePath);
-
-        return "uploads/" + fileName;
+        // Call the service to save the worker with the image URL
+        return workerService.saveWorkers(worker, image);
     }
 
     @PutMapping("/{id}")
@@ -95,7 +61,7 @@ public class WorkerController {
             @RequestParam("role") String role,
             @RequestParam("salary") double salary,
             @RequestParam("status") String status,
-            @RequestParam(value = "image", required = false) MultipartFile image) throws IOException {
+            @RequestParam(value = "image", required = false) MultipartFile image) throws Exception {
 
         Worker worker = new Worker();
         worker.setId(id);
@@ -106,12 +72,8 @@ public class WorkerController {
         worker.setSalary(salary);
         worker.setStatus(status);
 
-        if (image != null && !image.isEmpty()) {
-            String imageUrl = saveImage(image);
-            worker.setImage(imageUrl);
-        }
-
-        return workerService.updateWorker(id, worker);
+        // Call the service to update the worker with the new image URL
+        return workerService.updateWorker(id, worker, image);
     }
 
     @DeleteMapping("/{id}")

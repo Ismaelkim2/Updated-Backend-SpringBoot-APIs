@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface UserInterface extends UserDetailsService {
 
-    UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files);
+    UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) throws Exception;
 
     UserDTO createUserDTO (UserDTO userDTO);
 

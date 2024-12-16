@@ -24,27 +24,43 @@ public class UserServiceImpl implements UserInterface, UserDetailsService {
     private final JavaMailSender emailSender;
     private final FileStorageService fileStorageService;
     private final UserMapper userMapper;
+    private final ImageUploadService imageUploadService;
 
     @Autowired
-    public UserServiceImpl(UserRepo userRepo, JavaMailSender emailSender, FileStorageService fileStorageService, UserMapper userMapper) {
+    public UserServiceImpl(UserRepo userRepo, JavaMailSender emailSender, FileStorageService fileStorageService, UserMapper userMapper,ImageUploadService imageUploadService) {
         this.userRepo = userRepo;
         this.emailSender = emailSender;
         this.fileStorageService = fileStorageService;
         this.userMapper = userMapper;
+       this. imageUploadService=imageUploadService;
     }
 
     @Override
-    public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) {
+    public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) throws Exception {
         User user = mapToEntity(userDTO);
 
-        // Save files if provided
+        // Handle image upload using ImageUploadService
         if (files != null && !files.isEmpty()) {
-            user.setDocumentUrls(fileStorageService.storeFiles(files));
+            // Assuming that the image is the first file in the list
+            MultipartFile imageFile = files.get(0);
+
+            // Use ImageUploadService to upload the image and get the URL
+            String imageUrl = imageUploadService.uploadImage(imageFile);  // Upload image to external storage
+            user.setUserImageUrl(imageUrl);  // Set the image URL in the user entity
         }
 
+        // Save user documents if present (skip image files)
+        if (files != null && files.size() > 1) {
+            user.setDocumentUrls(fileStorageService.storeFiles(files.subList(1, files.size()))); // Upload documents if any
+        }
+
+        // Save the user entity with the image URL and document URLs (if any)
         userRepo.save(user);
+
+        // Return the mapped UserDTO
         return mapToDTO(user);
     }
+
 
     @Override
     public UserDTO createUserDTO(UserDTO userDTO) {

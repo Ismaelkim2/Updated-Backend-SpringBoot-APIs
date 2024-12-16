@@ -3,15 +3,12 @@ package com.kimsreviews.API.Controllers;
 import com.kimsreviews.API.Services.CustomerService;
 import com.kimsreviews.API.models.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -20,9 +17,6 @@ public class CustomerController {
 
     @Autowired
     private CustomerService customerService;
-
-    @Value("${file.upload-dir}")
-    private String IMAGE_DIRECTORY;
 
     @GetMapping
     public List<Customer> getAllCustomers() {
@@ -44,7 +38,7 @@ public class CustomerController {
             @RequestParam("name") String name,
             @RequestParam("email") String email,
             @RequestParam("phone") String phone,
-            @RequestParam("image") MultipartFile image) throws IOException {
+            @RequestParam("image") MultipartFile image) throws Exception {
 
         // Validate input parameters
         if (name == null || name.isEmpty()) {
@@ -63,41 +57,45 @@ public class CustomerController {
         customer.setEmail(email);
         customer.setPhone(phone);
 
-        // Handle the image file
-        if (image != null && !image.isEmpty()) {
-            String imageUrl = saveImage(image);
-            customer.setImage(imageUrl);
-        } else {
-            // Handle case where no image is uploaded
-            customer.setImage(null); // or provide a default image URL
-        }
-
-        // Save the customer and return the result
-        return customerService.saveCustomer(customer);
-    }
-
-    private String saveImage(MultipartFile image) throws IOException {
-        String contentType = image.getContentType();
-        if (!contentType.startsWith("image")) {
-            throw new IllegalArgumentException("File must be an image");
-        }
-
-        File directory = new File(IMAGE_DIRECTORY);
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-
-        String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
-        Path filePath = Paths.get(IMAGE_DIRECTORY, fileName);
-        Files.copy(image.getInputStream(), filePath);
-
-        // Return a URL that the Angular app can access
-        return "uploads/" + fileName;
+        // Save the customer along with the image
+        return customerService.saveCustomer(customer, image);
     }
 
     @PutMapping("/{id}")
-    public Customer updateCustomer(@PathVariable Long id, @RequestBody Customer customer) {
-        customer.setId(id); // Set the ID for the update operation
-        return customerService.saveCustomer(customer);
+    public Customer updateCustomer(
+            @PathVariable Long id,
+            @RequestParam("name") String name,
+            @RequestParam("email") String email,
+            @RequestParam("phone") String phone,
+            @RequestParam(value = "image", required = false) MultipartFile image) throws Exception {
+
+        // Fetch the existing customer
+        Customer customer = customerService.getCustomerById(id);
+        if (customer == null) {
+            throw new IllegalArgumentException("Customer not found");
+        }
+
+        // Update customer details
+        customer.setName(name);
+        customer.setEmail(email);
+        customer.setPhone(phone);
+
+        // Save the updated customer along with the image if provided
+        return customerService.saveCustomer(customer, image);
     }
+
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Customer> updateCustomer(
+            @PathVariable Long id,
+            @ModelAttribute Customer customer,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
+        try {
+            Customer updatedCustomer = customerService.updateCustomer(id, customer, image);
+            return ResponseEntity.ok(updatedCustomer);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
 }

@@ -3,6 +3,7 @@ package com.kimsreviews.API.Implementations;
 import com.kimsreviews.API.Services.UserInterface;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/login", "/api/user/create", "/api/posts/create", "/api/user/forgot-password", "/api/user", "/api/posts").permitAll()
                         .requestMatchers("/api/user/details").permitAll()
                         .requestMatchers("/api/customers/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/customers/update/**").permitAll()
                         .requestMatchers("/api/posts").permitAll()
                         .requestMatchers("/api/posts/delete/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
