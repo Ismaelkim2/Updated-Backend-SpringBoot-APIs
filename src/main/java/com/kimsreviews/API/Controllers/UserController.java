@@ -189,7 +189,6 @@ public class UserController {
             // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Generate JWT using the phone number
             String jwtToken = jwtTokenProvider.generateToken(userDTO.getPhoneNumber());
 
             // Create a response
