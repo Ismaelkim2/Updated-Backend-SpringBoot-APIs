@@ -19,6 +19,21 @@ public class ImageUploadService {
     private static final String CLIENT_ID = "ce427f04934e505";
     private static final Logger logger = LoggerFactory.getLogger(ImageUploadService.class);
 
+    // Custom ByteArrayResource with explicit filename
+    private static class CustomByteArrayResource extends ByteArrayResource {
+        private final String filename;
+
+        public CustomByteArrayResource(byte[] byteArray, String filename) {
+            super(byteArray);
+            this.filename = filename;
+        }
+
+        @Override
+        public String getFilename() {
+            return this.filename;
+        }
+    }
+
     public String uploadImage(MultipartFile image) throws Exception {
         if (image == null || image.isEmpty()) {
             logger.error("Image file is null or empty.");
@@ -33,12 +48,7 @@ public class ImageUploadService {
 
             // Prepare request body (multipart/form-data)
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("image", new ByteArrayResource(image.getBytes()) {
-                @Override
-                public String getFilename() {
-                    return image.getOriginalFilename(); // Set the file name for the request
-                }
-            });
+            body.add("image", new CustomByteArrayResource(image.getBytes(), image.getOriginalFilename()));
 
             // Create request entity
             HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
