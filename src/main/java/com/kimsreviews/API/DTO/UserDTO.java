@@ -1,28 +1,32 @@
 package com.kimsreviews.API.DTO;
-
 import com.kimsreviews.API.models.User;
 import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
-
-
 import java.util.List;
-import java.util.Set;
+
 
 @Data
 public class UserDTO {
-    private Long id;    private String firstName;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String firstName;
     private String lastName;
+
+    @Column(unique = true)
     private String phoneNumber;
     private String email;
     private String password;
     private boolean above18;
     private String userImageUrl;
     private String createdBy;
-    private List<String> documentUrls;
 
-    @Value("${imgur.client-id}")
-    private String clientId;
+    @Column(nullable = true)
+    private List<String> documentUrls;
 
 
 
@@ -43,8 +47,6 @@ public class UserDTO {
         this.userImageUrl = user.getUserImageUrl();
         this.createdBy=user.getCreatedBy();
 
-
     }
-
 
 }

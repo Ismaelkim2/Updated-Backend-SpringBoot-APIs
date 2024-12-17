@@ -4,14 +4,12 @@ import com.kimsreviews.API.DTO.UserDTO;
 import com.kimsreviews.API.Implementations.JwtTokenProvider;
 import com.kimsreviews.API.Implementations.PostNotFoundException;
 import com.kimsreviews.API.Implementations.UnauthorizedException;
-import com.kimsreviews.API.Services.FileStorageService;
-import com.kimsreviews.API.Services.ImageUploadService;
-import com.kimsreviews.API.Services.PostServiceImpl;
-import com.kimsreviews.API.Services.UserInterface;
+import com.kimsreviews.API.Services.*;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -31,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -124,54 +123,50 @@ public class UserController {
         }
     }
 
+
     @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
     @PostMapping("/user/create")
     public ResponseEntity<?> createUser(@ModelAttribute UserDTO userDTO, @RequestParam("userImage") MultipartFile userImage) {
         try {
             // Validate phone number length
             if (userDTO.getPhoneNumber().length() < 10) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Phone number must be at least 10 digits long."));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("Phone number must be at least 10 digits long."));
             }
 
             // Validate email format
             String emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
             if (!userDTO.getEmail().matches(emailRegex)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Invalid email format."));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponse("Invalid email format."));
             }
 
-            // Check if the phone number is already registered
+            // Check if phone number is already registered
             if (userService.getUserDetailsByPhoneNumber(userDTO.getPhoneNumber()) != null) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("Phone number is already registered."));
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Phone number is already registered."));
             }
 
-            // Upload the user image using external service
-            String imageUrl = imageUploadService.uploadImage(userImage);
-            userDTO.setUserImageUrl(imageUrl);
-
-            // Encrypt password before creating the user
-            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-            String encodedPassword = passwordEncoder.encode(userDTO.getPassword());
-            userDTO.setPassword(encodedPassword); // Set the encoded password
-
-            // Create the user
-            UserDTO createdUser = userService.createUserDTO(userDTO);
-
-            // Generate JWT token if user created successfully
-            if (createdUser != null) {
-                String jwtToken = generateJwtToken(createdUser);
-                return ResponseEntity.ok().header("Authorization", jwtToken).body(createdUser);
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            // Set default value for documentUrls if null
+            if (userDTO.getDocumentUrls() == null) {
+                userDTO.setDocumentUrls(new ArrayList<>()); // Set empty list or handle appropriately
             }
 
+            // Call service layer to handle image upload and user creation
+            UserDTO createdUser = userService.createUserDTO(userDTO, userImage);
+
+            // Return the success response
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+
+        } catch (UserCreationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("An error occurred while creating the user."));
         }
     }
 
 
-    @PreAuthorize("hasRole('ROLE_ADMIN','ROLE_USER')")
+
     @PutMapping("/user/{id}/update")
     public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @PathVariable("id") int userId) {
         UserDTO response = userService.updateUser(userDTO, userId);
@@ -181,29 +176,33 @@ public class UserController {
     @PostMapping("/user/login")
     public ResponseEntity<?> loginUser(@RequestBody UserDTO userDTO) {
         try {
-            // Authenticate user with phoneNumber and password
+            // Authenticate using phone number and password
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(userDTO.getPhoneNumber(), userDTO.getPassword())
             );
-
-            // Set authentication in security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            String jwtToken = jwtTokenProvider.generateToken(userDTO.getPhoneNumber());
+            // Generate JWT Token
+            String token = jwtTokenProvider.generateToken(authentication.getName());
 
-            // Create a response
-            LoginResponse loginResponse = new LoginResponse("Login successful", jwtToken);
-            return ResponseEntity.ok().body(loginResponse);
+            // Log success
+            System.out.println("Login successful for user: " + userDTO.getPhoneNumber());
+
+            return ResponseEntity.ok(new ResponseMessage("Login successful. Token: " + token));
 
         } catch (BadCredentialsException e) {
+            // Log invalid credentials
+            System.err.println("Invalid credentials for phone number: " + userDTO.getPhoneNumber());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Invalid phone number or password. Please try again."));
+                    .body(new ResponseMessage("Invalid phone number or password"));
         } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).error("Unexpected error during login: ", e);
+            // Handle other exceptions
+            System.err.println("Error during login: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Login failed due to server error."));
+                    .body(new ResponseMessage("An error occurred during login"));
         }
     }
+
 
     @PostMapping("/user/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody UserDTO userDTO) {

@@ -5,8 +5,7 @@ import com.kimsreviews.API.Exceptions.UserNotFoundEXceptions;
 import com.kimsreviews.API.Repository.UserRepo;
 import com.kimsreviews.API.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,50 +13,76 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserInterface {
 
     private final UserRepo userRepo;
-    private final JavaMailSender emailSender;
     private final ImageUploadService imageUploadService;
+    private final UserMapper userMapper;
 
     @Autowired
-    public UserServiceImpl(UserRepo userRepo, JavaMailSender emailSender, ImageUploadService imageUploadService) {
+    public UserServiceImpl(UserRepo userRepo, ImageUploadService imageUploadService, UserMapper userMapper) {
         this.userRepo = userRepo;
-        this.emailSender = emailSender;
         this.imageUploadService = imageUploadService;
+        this.userMapper = userMapper;
     }
 
     @Override
     public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) throws Exception {
-        System.out.println("Creating user...");
-        User user = mapToEntity(userDTO);
-
-        if (files != null && !files.isEmpty()) {
-            System.out.println("Uploading user image...");
-            MultipartFile imageFile = files.get(0);
-            String imageUrl = imageUploadService.uploadImage(imageFile);
-            System.out.println("Image URL: " + imageUrl);
-            user.setUserImageUrl(imageUrl);
-        }
-
-        // Encrypt password
-        System.out.println("Encrypting password...");
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-
-        System.out.println("Saving user to database...");
-        User savedUser = userRepo.save(user);
-        System.out.println("User saved with ID: " + savedUser.getId());
-
-        return mapToDTO(savedUser);
+        return null;
     }
 
     @Override
+    public UserDTO createUserDTO(UserDTO userDTO, MultipartFile userImage) throws Exception {
+        // Log the incoming request
+        System.out.println("Creating user with details: " + userDTO);
+
+        // Check if user already exists by email
+        if (userRepo.existsByEmail(userDTO.getEmail())) {
+            throw new UserCreationException("User creation failed: Email is already in use.");
+        }
+
+        // Map DTO to Entity
+        User user = userMapper.toEntity(userDTO);
+
+        // Handle image upload if file is provided
+        if (userImage != null && !userImage.isEmpty()) {
+            try {
+                String imageUrl = imageUploadService.uploadImage(userImage); // handle image upload in service
+                user.setUserImageUrl(imageUrl);
+                System.out.println("Image uploaded successfully. URL: " + imageUrl);
+            } catch (Exception e) {
+                throw new UserCreationException("User creation failed: Image upload failed. " + e.getMessage());
+            }
+        }
+
+        // Encrypt the password before saving
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));  // Encrypt password here
+
+        try {
+            // Save user to the database
+            User savedUser = userRepo.save(user);
+            System.out.println("User saved successfully with ID: " + savedUser.getId());
+
+            // Return the saved user as DTO
+            return userMapper.toDTO(savedUser);
+
+        } catch (DataIntegrityViolationException e) {
+            // Catch database constraint violations (e.g., unique constraint violation)
+            throw new UserCreationException("User creation failed: Database integrity violation. " + e.getMessage());
+        } catch (Exception e) {
+            throw new UserCreationException("User creation failed: " + e.getMessage());
+        }
+    }
+
+
+    @Override
     public UserDTO createUserDTO(UserDTO userDTO) {
-        return null;
+        return userDTO;
     }
 
     @Override
@@ -65,7 +90,7 @@ public class UserServiceImpl implements UserInterface {
         System.out.println("Fetching all users...");
         return userRepo.findAll()
                 .stream()
-                .map(this::mapToDTO)
+                .map(userMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -74,8 +99,9 @@ public class UserServiceImpl implements UserInterface {
         System.out.println("Fetching user by ID: " + id);
         User user = userRepo.findById(id)
                 .orElseThrow(() -> new UserNotFoundEXceptions("User not found"));
-        return mapToDTO(user);
+        return userMapper.toDTO(user);
     }
+
     @Override
     public UserDTO updateUser(UserDTO userDTO, int id) {
         User user = userRepo.findById(id)
@@ -86,15 +112,25 @@ public class UserServiceImpl implements UserInterface {
         user.setLastName(userDTO.getLastName());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setAbove18(userDTO.isAbove18());
-        user.setPassword(userDTO.getPassword());
+
+        // Encrypt the new password if it is being updated
+        if (userDTO.getPassword() != null && !userDTO.getPassword().isEmpty()) {
+            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        }
+
         user.setEmail(userDTO.getEmail());
         user.setIsVerified(false);
-        User updatedUser = userRepo.save(user);
-        return mapToDTO(updatedUser);
+
+        try {
+            // Save updated user
+            User updatedUser = userRepo.save(user);
+            return userMapper.toDTO(updatedUser);
+        } catch (Exception e) {
+            System.err.println("Error occurred while updating user: " + e.getMessage());
+            throw new RuntimeException("Error updating user: " + e.getMessage());
+        }
     }
-
-
-
 
     @Override
     public void updateUserPasswords() {
@@ -112,8 +148,14 @@ public class UserServiceImpl implements UserInterface {
 
     @Override
     public boolean verifyUserCredentials(UserDTO userDTO) {
+        Optional<User> userOptional = userRepo.findByEmail(userDTO.getEmail());
+        if (userOptional.isPresent()) {
+            BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+            return passwordEncoder.matches(userDTO.getPassword(), userOptional.get().getPassword());
+        }
         return false;
     }
+
 
     @Override
     public boolean resetPassword(String phoneNumber) {
@@ -122,33 +164,30 @@ public class UserServiceImpl implements UserInterface {
 
     @Override
     public UserDTO getUserDetailsByPhoneNumber(String phoneNumber) {
+        User user = userRepo.findByPhoneNumber(phoneNumber);
+        if (user != null) {
+            return userMapper.toDTO(user);
+        }
         return null;
-    }
-
-    private UserDTO mapToDTO(User user) {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId((long) user.getId());
-        userDTO.setFirstName(user.getFirstName());
-        userDTO.setLastName(user.getLastName());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setPhoneNumber(user.getPhoneNumber());
-        userDTO.setUserImageUrl(user.getUserImageUrl());
-        return userDTO;
-    }
-
-    private User mapToEntity(UserDTO userDTO) {
-        User user = new User();
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
-        user.setEmail(userDTO.getEmail());
-        user.setPhoneNumber(userDTO.getPhoneNumber());
-        user.setPassword(userDTO.getPassword());
-        user.setUserImageUrl(userDTO.getUserImageUrl());
-        return user;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return null;
+    public UserDetails loadUserByUsername(String phoneNumber) throws UsernameNotFoundException {
+        User user = userRepo.findByPhoneNumber(phoneNumber);
+
+        if (user == null) {
+            System.err.println("User not found with phone number: " + phoneNumber);
+            throw new UsernameNotFoundException("User not found with phone number: " + phoneNumber);
+        }
+
+        System.out.println("User found: " + user.getPhoneNumber());
+
+        return org.springframework.security.core.userdetails.User
+                .builder()
+                .username(user.getPhoneNumber())
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
     }
+
 }

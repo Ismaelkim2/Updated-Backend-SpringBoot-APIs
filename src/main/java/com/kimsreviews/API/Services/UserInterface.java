@@ -10,6 +10,8 @@ public interface UserInterface extends UserDetailsService {
 
     UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) throws Exception;
 
+    UserDTO createUserDTO(UserDTO userDTO, MultipartFile userImage) throws Exception;
+
     UserDTO createUserDTO (UserDTO userDTO);
 
     List<UserDTO> getAllUser();

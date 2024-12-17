@@ -12,6 +12,7 @@ public class UserMapper {
             return null;
         }
         UserDTO dto = new UserDTO();
+        dto.setId((long) user.getId());  // Ensure proper conversion if ID is Long
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setEmail(user.getEmail());
