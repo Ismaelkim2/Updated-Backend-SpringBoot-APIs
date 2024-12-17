@@ -3,6 +3,8 @@ package com.kimsreviews.API.DTO;
 import com.kimsreviews.API.models.User;
 import jakarta.persistence.Column;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
+
 
 import java.util.List;
 import java.util.Set;
@@ -18,16 +20,15 @@ public class UserDTO {
     private String userImageUrl;
     private String createdBy;
     private List<String> documentUrls;
+
+    @Value("${imgur.client-id}")
+    private String clientId;
+
+
+
 //    private Set<String> roles;
 
 
-    public void setDocumentUrls(List<String> documentUrls) {
-        this.documentUrls = documentUrls;
-    }
-
-    public List<String> getDocumentUrls() {
-        return documentUrls;
-    }
 
     public UserDTO() {}
 
@@ -41,6 +42,8 @@ public class UserDTO {
         this.above18 = user.isAbove18();
         this.userImageUrl = user.getUserImageUrl();
         this.createdBy=user.getCreatedBy();
+
+
     }
 
 

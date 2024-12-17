@@ -48,10 +48,16 @@ public class UserServiceImpl implements UserInterface, UserDetailsService {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
-        // Save user to the database
         User savedUser = userRepo.save(user);
-
         return mapToDTO(savedUser);
+    }
+
+    @Override
+    public List<UserDTO> getAllUser() {
+        return userRepo.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
 
@@ -60,11 +66,6 @@ public class UserServiceImpl implements UserInterface, UserDetailsService {
         User user = mapToEntity(userDTO);
         userRepo.save(user);
         return mapToDTO(user);
-    }
-
-    @Override
-    public List<UserDTO> getAllUser() {
-        return userRepo.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     @Override
