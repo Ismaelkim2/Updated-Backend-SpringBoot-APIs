@@ -32,51 +32,30 @@ public class UserServiceImpl implements UserInterface {
     }
 
     @Override
-    public UserDTO createUserDTO(UserDTO userDTO, List<MultipartFile> files) throws Exception {
-        return null;
-    }
-
-    @Override
     public UserDTO createUserDTO(UserDTO userDTO, MultipartFile userImage) throws Exception {
-        // Log the incoming request
-        System.out.println("Creating user with details: " + userDTO);
+        // Log the creation attempt
+        System.out.println("Creating user: " + userDTO);
 
-        // Check if the user already exists by email
+        // Check for existing user
         if (userRepo.existsByEmail(userDTO.getEmail())) {
-            throw new UserCreationException("User creation failed: Email is already in use.");
+            throw new UserCreationException("Email already in use.");
         }
 
-        // Map DTO to Entity
+        // Map DTO to entity
         User user = userMapper.toEntity(userDTO);
 
-        // Validate and handle image upload
+        // Handle optional image upload
         if (userImage != null && !userImage.isEmpty()) {
-            validateImage(userImage); // Validate image size and type
-            try {
-                // Upload the image to Cloudinary and get the URL
-                String imageUrl = imageUploadService.uploadImage(userImage);
-                user.setUserImageUrl(imageUrl);
-                System.out.println("Image uploaded successfully. URL: " + imageUrl);
-            } catch (IOException e) {
-                throw new UserCreationException("User creation failed: Image upload failed. " + e.getMessage());
-            }
+            validateImage(userImage);
+            String imageUrl = imageUploadService.uploadImage(userImage);
+            user.setUserImageUrl(imageUrl);
         }
 
-        // Encrypt the password before saving
+        // Encrypt password
         user.setPassword(new BCryptPasswordEncoder().encode(userDTO.getPassword()));
 
-        try {
-            // Save the user to the database
-            User savedUser = userRepo.save(user);
-            System.out.println("User saved successfully with ID: " + savedUser.getId());
-
-            // Return the saved user as a DTO
-            return userMapper.toDTO(savedUser);
-        } catch (DataIntegrityViolationException e) {
-            throw new UserCreationException("User creation failed: Database constraint violation. " + e.getMessage());
-        } catch (Exception e) {
-            throw new UserCreationException("User creation failed: " + e.getMessage());
-        }
+        // Save and return
+        return userMapper.toDTO(userRepo.save(user));
     }
 
     // Helper method for image validation
@@ -95,10 +74,6 @@ public class UserServiceImpl implements UserInterface {
         }
     }
 
-    @Override
-    public UserDTO createUserDTO(UserDTO userDTO) {
-        return userDTO;
-    }
 
     @Override
     public List<UserDTO> getAllUser() {

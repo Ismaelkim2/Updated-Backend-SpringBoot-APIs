@@ -128,8 +128,7 @@ public class UserController {
 @PostMapping("/user/create")
 public ResponseEntity<?> createUser(
         @ModelAttribute UserDTO userDTO,
-        @RequestParam(value = "userImageUrl", required = false) MultipartFile[] userImages,
-        @RequestParam(value = "userImageUrl", required = false) String userImageUrl) {
+        @RequestParam(value = "userImageUrl", required = false) MultipartFile userImage) {
     try {
         // Validate phone number length
         if (userDTO.getPhoneNumber().length() < 10) {
@@ -155,31 +154,21 @@ public ResponseEntity<?> createUser(
             userDTO.setDocumentUrls(new ArrayList<>());
         }
 
-        // Handling image URLs or multi-file uploads
-        if (userImages != null && userImages.length > 0) {
-            // Handle multi-file upload if files are provided
-            List<String> uploadedImageUrls = new ArrayList<>();
-            for (MultipartFile image : userImages) {
-                // Assuming a method to upload image and return its URL
-                String imageUrl = imageUploadService.uploadImage(image);
-                uploadedImageUrls.add(imageUrl);
-            }
-            userDTO.setUserImageUrl(String.join(",", uploadedImageUrls)); // Concatenate URLs as a comma-separated string
-        } else if (userImageUrl != null && !userImageUrl.isEmpty()) {
-            // Use the provided URL string if it's not null or empty
-            userDTO.setUserImageUrl(userImageUrl);
-        }
-
-        // Call service layer to handle user creation
-        UserDTO createdUser = userService.createUserDTO(userDTO);
+        // Call service layer to handle user creation, passing the single user image (if available)
+        UserDTO createdUser = userService.createUserDTO(userDTO, userImage);
 
         // Return the success response
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
 
+    } catch (UserCreationException e) {
+        // Handle custom exception for user creation issues (e.g., email already in use)
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
     } catch (Exception e) {
+        // Handle any other exceptions
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("An error occurred while creating the user."));
     }
 }
+
 
     @PutMapping("/user/{id}/update")
     public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @PathVariable("id") int userId) {
