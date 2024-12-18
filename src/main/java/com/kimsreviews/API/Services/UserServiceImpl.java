@@ -51,7 +51,7 @@ public class UserServiceImpl implements UserInterface {
         // Handle image upload if file is provided
         if (userImage != null && !userImage.isEmpty()) {
             try {
-                String imageUrl = imageUploadService.uploadImage(userImage); // handle image upload in service
+                String imageUrl = imageUploadService.uploadImage(userImage).toString(); // handle image upload in service
                 user.setUserImageUrl(imageUrl);
                 System.out.println("Image uploaded successfully. URL: " + imageUrl);
             } catch (Exception e) {

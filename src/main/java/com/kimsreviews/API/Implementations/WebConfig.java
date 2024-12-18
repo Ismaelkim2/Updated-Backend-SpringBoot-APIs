@@ -3,7 +3,6 @@ package com.kimsreviews.API.Implementations;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -11,9 +10,6 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Value("${frontend.url}")
     private String frontendUrl;
-
-    @Value("${file.upload-dir}")
-    private String uploadDir;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -28,13 +24,10 @@ public class WebConfig implements WebMvcConfigurer {
                 .maxAge(3600);
     }
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        if (uploadDir != null && !uploadDir.isEmpty()) {
-            registry.addResourceHandler("/uploads/**")
-                    .addResourceLocations("file:" + uploadDir + "/");
-        } else {
-            throw new IllegalArgumentException("Upload directory path cannot be null or empty.");
-        }
-    }
+//    @Override
+//    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+//        registry.addResourceHandler("/uploads/**")
+//                .addResourceLocations("file:/tmp/uploads/");
+//    }
+
 }

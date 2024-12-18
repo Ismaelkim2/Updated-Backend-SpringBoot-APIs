@@ -35,7 +35,7 @@ public class CustomerService {
 
     public Customer saveCustomer(Customer customer, MultipartFile image) throws Exception {
         if (image != null && !image.isEmpty()) {
-            String imageUrl = imageUploadService.uploadImage(image);
+            String imageUrl = imageUploadService.uploadImage(image).toString();
             customer.setImage(imageUrl);
         }
         return customerRepository.save(customer);
@@ -58,7 +58,7 @@ public class CustomerService {
 
             // Update image if a new one is provided
             if (image != null && !image.isEmpty()) {
-                String imageUrl = imageUploadService.uploadImage(image);
+                String imageUrl = imageUploadService.uploadImage(image).toString();
                 existingCustomer.setImage(imageUrl);
             }
 

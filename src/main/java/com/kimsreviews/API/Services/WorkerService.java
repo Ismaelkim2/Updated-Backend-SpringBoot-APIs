@@ -28,7 +28,7 @@ public class WorkerService {
 
     public Worker saveWorkers(Worker worker, MultipartFile image) throws Exception {
         if (image != null && !image.isEmpty()) {
-            String imageUrl = imageUploadService.uploadImage(image);
+            String imageUrl = imageUploadService.uploadImage(image).toString();
             worker.setImage(imageUrl);
         }
         return workerRepo.save(worker);
@@ -37,7 +37,7 @@ public class WorkerService {
     public Worker updateWorker(Long id, Worker worker, MultipartFile image) throws Exception {
         worker.setId(id);
         if (image != null && !image.isEmpty()) {
-            String imageUrl = imageUploadService.uploadImage(image);
+            String imageUrl = imageUploadService.uploadImage(image).toString();
             worker.setImage(imageUrl);
         }
         return workerRepo.save(worker);

@@ -16,10 +16,35 @@ import java.util.Map;
 public class ImageUploadService {
 
     private static final String IMGUR_API_URL = "https://api.imgur.com/3/upload";
-    private static final String CLIENT_ID = "ce427f04934e505";
+    private static final String CLIENT_ID = "your-client-id";
     private static final Logger logger = LoggerFactory.getLogger(ImageUploadService.class);
 
-    // Custom ByteArrayResource with explicit filename
+    public Map<String, Object> uploadImage(MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                throw new IllegalArgumentException("File is empty");
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            headers.add("Authorization", "Client-ID " + CLIENT_ID);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("image", new CustomByteArrayResource(file.getBytes(), file.getOriginalFilename()));
+
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<Map> response = restTemplate.postForEntity(IMGUR_API_URL, requestEntity, Map.class);
+
+            logger.info("Image uploaded successfully: " + response.getBody());
+            return response.getBody();
+        } catch (Exception e) {
+            logger.error("Exception during image upload", e);
+            throw new RuntimeException("Image upload failed", e);
+        }
+    }
+
     private static class CustomByteArrayResource extends ByteArrayResource {
         private final String filename;
 
@@ -30,53 +55,9 @@ public class ImageUploadService {
 
         @Override
         public String getFilename() {
-            return this.filename;
-        }
-    }
-
-    public String uploadImage(MultipartFile image) throws Exception {
-        if (image == null || image.isEmpty()) {
-            logger.error("Image file is null or empty.");
-            throw new IllegalArgumentException("Image file is required.");
-        }
-
-        try {
-            // Prepare headers
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Client-ID " + CLIENT_ID);
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-            // Prepare request body (multipart/form-data)
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("image", new CustomByteArrayResource(image.getBytes(), image.getOriginalFilename()));
-
-            // Create request entity
-            HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
-            logger.info("Sending HTTP request to Imgur API...");
-
-            // Send the request using RestTemplate
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<Map> response = restTemplate.exchange(IMGUR_API_URL, HttpMethod.POST, entity, Map.class);
-
-            // Process the response
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                Map<String, Object> responseBody = response.getBody();
-                if (responseBody.containsKey("data")) {
-                    Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-                    if (data.containsKey("link")) {
-                        String imageUrl = (String) data.get("link");
-                        logger.info("Image uploaded successfully. URL: " + imageUrl);
-                        return imageUrl;
-                    }
-                }
-            }
-
-            // If the response is not valid, throw an exception
-            logger.error("Image upload failed. Response: " + response.getBody());
-            throw new Exception("Image upload failed. Response: " + response.getBody());
-        } catch (Exception e) {
-            logger.error("Exception during image upload", e);
-            throw new Exception("Image upload failed due to: " + e.getMessage(), e);
+            return filename;
         }
     }
 }
+
+
