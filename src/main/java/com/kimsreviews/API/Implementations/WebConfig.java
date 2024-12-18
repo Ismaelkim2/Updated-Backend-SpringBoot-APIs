@@ -38,8 +38,8 @@ public class WebConfig implements WebMvcConfigurer {
 
         // Create the factory with timeouts
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(10000);
-        factory.setReadTimeout(10000);
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(5000);
 
         // Return a RestTemplate that uses the factory
         return new RestTemplate(factory);

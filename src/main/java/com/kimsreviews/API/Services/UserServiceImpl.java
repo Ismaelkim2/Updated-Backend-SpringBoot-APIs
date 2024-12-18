@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserInterface {
         // Log the incoming request
         System.out.println("Creating user with details: " + userDTO);
 
-        // Check if user already exists by email
+        // Check if the user already exists by email
         if (userRepo.existsByEmail(userDTO.getEmail())) {
             throw new UserCreationException("User creation failed: Email is already in use.");
         }
@@ -49,55 +49,51 @@ public class UserServiceImpl implements UserInterface {
         // Map DTO to Entity
         User user = userMapper.toEntity(userDTO);
 
-        // Handle image upload if file is provided
+        // Validate and handle image upload
         if (userImage != null && !userImage.isEmpty()) {
+            validateImage(userImage); // Validate image size and type
             try {
                 // Upload the image to Cloudinary and get the URL
-                String imageUrl = imageUploadService.uploadImage(userImage); // Cloudinary upload service
-                user.setUserImageUrl(imageUrl); // Set the image URL on the user object
+                String imageUrl = imageUploadService.uploadImage(userImage);
+                user.setUserImageUrl(imageUrl);
                 System.out.println("Image uploaded successfully. URL: " + imageUrl);
             } catch (IOException e) {
                 throw new UserCreationException("User creation failed: Image upload failed. " + e.getMessage());
             }
         }
 
-        if (userImage != null && !userImage.isEmpty()) {
-            String contentType = userImage.getContentType();
-            long maxSize = 10 * 1024 * 1024; // 5MB
-
-            if (!List.of("image/jpeg", "image/png", "image/gif").contains(contentType)) {
-                throw new UserCreationException("Invalid image type. Only JPG, PNG, and GIF are supported.");
-            }
-            if (userImage.getSize() > maxSize) {
-                throw new UserCreationException("Image size exceeds 5MB.");
-            }
-
-            // Proceed with the upload
-            String imageUrl = imageUploadService.uploadImage(userImage);
-            user.setUserImageUrl(imageUrl);
-        }
-
-
         // Encrypt the password before saving
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));  // Encrypt password here
+        user.setPassword(new BCryptPasswordEncoder().encode(userDTO.getPassword()));
 
         try {
-            // Save user to the database
+            // Save the user to the database
             User savedUser = userRepo.save(user);
             System.out.println("User saved successfully with ID: " + savedUser.getId());
 
-            // Return the saved user as DTO
+            // Return the saved user as a DTO
             return userMapper.toDTO(savedUser);
-
         } catch (DataIntegrityViolationException e) {
-            // Catch database constraint violations (e.g., unique constraint violation)
-            throw new UserCreationException("User creation failed: Database integrity violation. " + e.getMessage());
+            throw new UserCreationException("User creation failed: Database constraint violation. " + e.getMessage());
         } catch (Exception e) {
             throw new UserCreationException("User creation failed: " + e.getMessage());
         }
     }
 
+    // Helper method for image validation
+    private void validateImage(MultipartFile userImage) throws UserCreationException {
+        String contentType = userImage.getContentType();
+        long maxSize = 5 * 1024 * 1024; // 5MB
+
+        // Check content type
+        if (!List.of("image/jpeg", "image/png", "image/gif").contains(contentType)) {
+            throw new UserCreationException("Invalid image type. Only JPG, PNG, and GIF are supported.");
+        }
+
+        // Check file size
+        if (userImage.getSize() > maxSize) {
+            throw new UserCreationException("Image size exceeds 5MB.");
+        }
+    }
 
     @Override
     public UserDTO createUserDTO(UserDTO userDTO) {
