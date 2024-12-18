@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -51,13 +52,31 @@ public class UserServiceImpl implements UserInterface {
         // Handle image upload if file is provided
         if (userImage != null && !userImage.isEmpty()) {
             try {
-                String imageUrl = imageUploadService.uploadImage(userImage).toString(); // handle image upload in service
-                user.setUserImageUrl(imageUrl);
+                // Upload the image to Cloudinary and get the URL
+                String imageUrl = imageUploadService.uploadImage(userImage); // Cloudinary upload service
+                user.setUserImageUrl(imageUrl); // Set the image URL on the user object
                 System.out.println("Image uploaded successfully. URL: " + imageUrl);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw new UserCreationException("User creation failed: Image upload failed. " + e.getMessage());
             }
         }
+
+        if (userImage != null && !userImage.isEmpty()) {
+            String contentType = userImage.getContentType();
+            long maxSize = 10 * 1024 * 1024; // 5MB
+
+            if (!List.of("image/jpeg", "image/png", "image/gif").contains(contentType)) {
+                throw new UserCreationException("Invalid image type. Only JPG, PNG, and GIF are supported.");
+            }
+            if (userImage.getSize() > maxSize) {
+                throw new UserCreationException("Image size exceeds 5MB.");
+            }
+
+            // Proceed with the upload
+            String imageUrl = imageUploadService.uploadImage(userImage);
+            user.setUserImageUrl(imageUrl);
+        }
+
 
         // Encrypt the password before saving
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();

@@ -124,48 +124,62 @@ public class UserController {
     }
 
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
-    @PostMapping("/user/create")
-    public ResponseEntity<?> createUser(@ModelAttribute UserDTO userDTO, @RequestParam("userImage") MultipartFile userImage) {
-        try {
-            // Validate phone number length
-            if (userDTO.getPhoneNumber().length() < 10) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("Phone number must be at least 10 digits long."));
-            }
-
-            // Validate email format
-            String emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
-            if (!userDTO.getEmail().matches(emailRegex)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("Invalid email format."));
-            }
-
-            // Check if phone number is already registered
-            if (userService.getUserDetailsByPhoneNumber(userDTO.getPhoneNumber()) != null) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(new ErrorResponse("Phone number is already registered."));
-            }
-
-            // Set default value for documentUrls if null
-            if (userDTO.getDocumentUrls() == null) {
-                userDTO.setDocumentUrls(new ArrayList<>()); // Set empty list or handle appropriately
-            }
-
-            // Call service layer to handle image upload and user creation
-            UserDTO createdUser = userService.createUserDTO(userDTO, userImage);
-
-            // Return the success response
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
-
-        } catch (UserCreationException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("An error occurred while creating the user."));
+//    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
+@PostMapping("/user/create")
+public ResponseEntity<?> createUser(
+        @ModelAttribute UserDTO userDTO,
+        @RequestParam(value = "userImageUrl", required = false) MultipartFile[] userImages,
+        @RequestParam(value = "userImageUrl", required = false) String userImageUrl) {
+    try {
+        // Validate phone number length
+        if (userDTO.getPhoneNumber().length() < 10) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Phone number must be at least 10 digits long."));
         }
+
+        // Validate email format
+        String emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
+        if (!userDTO.getEmail().matches(emailRegex)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Invalid email format."));
+        }
+
+        // Check if phone number is already registered
+        if (userService.getUserDetailsByPhoneNumber(userDTO.getPhoneNumber()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse("Phone number is already registered."));
+        }
+
+        // Set default value for documentUrls if null
+        if (userDTO.getDocumentUrls() == null) {
+            userDTO.setDocumentUrls(new ArrayList<>());
+        }
+
+        // Handling image URLs or multi-file uploads
+        if (userImages != null && userImages.length > 0) {
+            // Handle multi-file upload if files are provided
+            List<String> uploadedImageUrls = new ArrayList<>();
+            for (MultipartFile image : userImages) {
+                // Assuming a method to upload image and return its URL
+                String imageUrl = imageUploadService.uploadImage(image);
+                uploadedImageUrls.add(imageUrl);
+            }
+            userDTO.setUserImageUrl(String.join(",", uploadedImageUrls)); // Concatenate URLs as a comma-separated string
+        } else if (userImageUrl != null && !userImageUrl.isEmpty()) {
+            // Use the provided URL string if it's not null or empty
+            userDTO.setUserImageUrl(userImageUrl);
+        }
+
+        // Call service layer to handle user creation
+        UserDTO createdUser = userService.createUserDTO(userDTO);
+
+        // Return the success response
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("An error occurred while creating the user."));
     }
-
-
+}
 
     @PutMapping("/user/{id}/update")
     public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @PathVariable("id") int userId) {
