@@ -13,16 +13,15 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.client.HttpClientErrorException;
-import java.io.IOException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 
 @Service
 public class ImageUploadService {
     private final RestTemplate restTemplate;
-
-
     private String clientId;
-
     private final Logger logger = LoggerFactory.getLogger(ImageUploadService.class);
 
     public ImageUploadService(RestTemplate restTemplate, String clientId) {
@@ -63,17 +62,15 @@ public class ImageUploadService {
 
     // Method to extract image URL from Imgur API response
     private String extractImageUrlFromResponse(String responseBody) {
-        // Parse the response JSON to extract the URL (e.g., using Jackson or another JSON library)
-        // For simplicity, here we're assuming the response contains a JSON field `data.link`.
-
-        // You can use a JSON parsing library like Jackson (ObjectMapper) to parse the response properly.
-        // Example:
-        // ObjectMapper objectMapper = new ObjectMapper();
-        // JsonNode jsonResponse = objectMapper.readTree(responseBody);
-        // return jsonResponse.get("data").get("link").asText();
-
-        // For the sake of demonstration, we'll assume it's returned as a string.
-        return responseBody; // Adjust this depending on actual response structure
+        try {
+            // Use Jackson to parse the response and extract the image URL
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonResponse = objectMapper.readTree(responseBody);
+            return jsonResponse.get("data").get("link").asText();
+        } catch (IOException e) {
+            logger.error("Failed to parse Imgur response: {}", e.getMessage());
+            throw new RuntimeException("Failed to parse Imgur response", e);
+        }
     }
 
     // Custom ByteArrayResource to send image file as multipart
@@ -90,8 +87,8 @@ public class ImageUploadService {
             return filename;
         }
     }
-
 }
+
 
 
 
