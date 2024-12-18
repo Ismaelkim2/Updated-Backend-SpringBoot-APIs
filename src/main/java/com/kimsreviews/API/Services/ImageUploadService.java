@@ -3,6 +3,7 @@ package com.kimsreviews.API.Services;
 import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -12,9 +13,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.client.HttpClientErrorException;
-
 import java.io.IOException;
-import java.util.Map;
+
 
 @Service
 public class ImageUploadService {
@@ -90,6 +90,7 @@ public class ImageUploadService {
             return filename;
         }
     }
+
 }
 
 

@@ -22,6 +22,11 @@ public class WebConfig implements WebMvcConfigurer {
         return new ImageUploadService(restTemplate, imgurClientId);
     }
 
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
