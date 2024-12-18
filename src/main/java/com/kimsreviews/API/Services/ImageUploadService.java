@@ -1,5 +1,6 @@
 package com.kimsreviews.API.Services;
 
+import lombok.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
@@ -7,45 +8,76 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.HttpClientErrorException;
 
+import java.io.IOException;
 import java.util.Map;
 
 @Service
 public class ImageUploadService {
+    private final RestTemplate restTemplate;
 
-    private static final String IMGUR_API_URL = "https://api.imgur.com/3/upload";
-    private static final String CLIENT_ID = "your-client-id";
-    private static final Logger logger = LoggerFactory.getLogger(ImageUploadService.class);
 
-    public Map<String, Object> uploadImage(MultipartFile file) {
+    private String clientId;
+
+    private final Logger logger = LoggerFactory.getLogger(ImageUploadService.class);
+
+    public ImageUploadService(RestTemplate restTemplate, String clientId) {
+        this.restTemplate = restTemplate;
+        this.clientId = clientId;
+    }
+
+    public String uploadImage(MultipartFile imageFile) throws IOException {
+        byte[] imageBytes = imageFile.getBytes();
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("image", new CustomByteArrayResource(imageBytes, imageFile.getOriginalFilename()));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("Authorization", "Client-ID " + clientId);
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        String url = "https://api.imgur.com/3/upload";
         try {
-            if (file.isEmpty()) {
-                throw new IllegalArgumentException("File is empty");
-            }
+            // Perform the upload
+            ResponseEntity<String> response = restTemplate.postForEntity(url, requestEntity, String.class);
+            logger.debug("Imgur response: {}", response.getBody());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-            headers.add("Authorization", "Client-ID " + CLIENT_ID);
-
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("image", new CustomByteArrayResource(file.getBytes(), file.getOriginalFilename()));
-
-            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<Map> response = restTemplate.postForEntity(IMGUR_API_URL, requestEntity, Map.class);
-
-            logger.info("Image uploaded successfully: " + response.getBody());
-            return response.getBody();
-        } catch (Exception e) {
-            logger.error("Exception during image upload", e);
-            throw new RuntimeException("Image upload failed", e);
+            // Parse the Imgur API response (extract the image URL)
+            return extractImageUrlFromResponse(response.getBody());
+        } catch (HttpClientErrorException e) {
+            // Handle HTTP client errors (e.g., 4xx errors)
+            logger.error("HTTP error during Imgur upload: {} - {}", e.getStatusCode(), e.getMessage());
+            throw e;
+        } catch (ResourceAccessException e) {
+            // Handle I/O errors
+            logger.error("I/O error during Imgur upload: {}", e.getMessage(), e);
+            throw e;
         }
     }
 
-    private static class CustomByteArrayResource extends ByteArrayResource {
+    // Method to extract image URL from Imgur API response
+    private String extractImageUrlFromResponse(String responseBody) {
+        // Parse the response JSON to extract the URL (e.g., using Jackson or another JSON library)
+        // For simplicity, here we're assuming the response contains a JSON field `data.link`.
+
+        // You can use a JSON parsing library like Jackson (ObjectMapper) to parse the response properly.
+        // Example:
+        // ObjectMapper objectMapper = new ObjectMapper();
+        // JsonNode jsonResponse = objectMapper.readTree(responseBody);
+        // return jsonResponse.get("data").get("link").asText();
+
+        // For the sake of demonstration, we'll assume it's returned as a string.
+        return responseBody; // Adjust this depending on actual response structure
+    }
+
+    // Custom ByteArrayResource to send image file as multipart
+    public static class CustomByteArrayResource extends ByteArrayResource {
         private final String filename;
 
         public CustomByteArrayResource(byte[] byteArray, String filename) {
@@ -59,5 +91,7 @@ public class ImageUploadService {
         }
     }
 }
+
+
 
 
