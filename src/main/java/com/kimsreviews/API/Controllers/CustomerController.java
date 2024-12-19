@@ -1,6 +1,7 @@
 package com.kimsreviews.API.Controllers;
 
 import com.kimsreviews.API.Services.CustomerService;
+import com.kimsreviews.API.Services.ImageUploadService;
 import com.kimsreviews.API.models.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,21 +18,7 @@ public class CustomerController {
 
     @Autowired
     private CustomerService customerService;
-
-    @GetMapping
-    public List<Customer> getAllCustomers() {
-        return customerService.getAllCustomers();
-    }
-
-    @GetMapping("/{id}")
-    public Customer getCustomer(@PathVariable Long id) {
-        return customerService.getCustomerById(id);
-    }
-
-    @DeleteMapping("/{id}")
-    public void deleteCustomer(@PathVariable Long id) {
-        customerService.deleteCustomer(id);
-    }
+    private ImageUploadService imageUploadService;
 
     @PostMapping
     public Customer createCustomer(
@@ -61,41 +48,49 @@ public class CustomerController {
         return customerService.saveCustomer(customer, image);
     }
 
-    @PutMapping("/{id}")
-    public Customer updateCustomer(
-            @PathVariable Long id,
-            @RequestParam("name") String name,
-            @RequestParam("email") String email,
-            @RequestParam("phone") String phone,
-            @RequestParam(value = "image", required = false) MultipartFile image) throws Exception {
 
-        // Fetch the existing customer
-        Customer customer = customerService.getCustomerById(id);
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer not found");
-        }
+    @GetMapping
+    public List<Customer> getAllCustomers() {
+        return customerService.getAllCustomers();
+    }
 
-        // Update customer details
-        customer.setName(name);
-        customer.setEmail(email);
-        customer.setPhone(phone);
+    @GetMapping("/{id}")
+    public Customer getCustomer(@PathVariable Long id) {
+        return customerService.getCustomerById(id);
+    }
 
-        // Save the updated customer along with the image if provided
-        return customerService.saveCustomer(customer, image);
+    @DeleteMapping("/{id}")
+    public void deleteCustomer(@PathVariable Long id) {
+        customerService.deleteCustomer(id);
     }
 
 
     @PutMapping("/update/{id}")
     public ResponseEntity<Customer> updateCustomer(
-            @PathVariable Long id,
-            @ModelAttribute Customer customer,
+            @PathVariable("id") Long id,
+            @RequestParam("name") String name,
+            @RequestParam("email") String email,
+            @RequestParam("phone") String phone,
             @RequestParam(value = "image", required = false) MultipartFile image) {
+
+        // Create an updated customer object with the provided data
+        Customer updatedCustomer = new Customer();
+        updatedCustomer.setName(name);
+        updatedCustomer.setEmail(email);
+        updatedCustomer.setPhone(phone);
+
+        // Call the service to update the customer
         try {
-            Customer updatedCustomer = customerService.updateCustomer(id, customer, image);
-            return ResponseEntity.ok(updatedCustomer);
+            Customer customer = customerService.updateCustomer(id, updatedCustomer, image);
+            return ResponseEntity.ok(customer);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
 
 }
+
+
+
+
+

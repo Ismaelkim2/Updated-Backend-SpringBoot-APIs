@@ -25,10 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Value("${imgur.client-id}")
     private String imgurClientId;
 
-    @Bean
-    public ImageUploadService imageUploadService(RestTemplate restTemplate) {
-        return new ImageUploadService(restTemplate, imgurClientId);
-    }
+
 
     @Bean
     public RestTemplate restTemplate() {
