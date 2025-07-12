@@ -9,16 +9,19 @@ import java.time.Duration;
 import static org.springframework.http.CacheControl.maxAge;
 
 @Configuration
-@EnableWebMvc
 public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:4200", "https://brishkimecoeggs.onrender.com","https://dashing-squirrel-91b6d0.netlify.app")
-                .allowedMethods("GET", "POST", "PUT", "DELETE","OPTIONS") // Allowed HTTP methods
-                .allowedHeaders("*"); // Allowed headers
-
-                maxAge(Duration.ofDays(3600));
+                .allowedOrigins(
+                        "http://localhost:4200",
+                        "https://brishkimecoeggs.onrender.com",
+                        "https://dashing-squirrel-91b6d0.netlify.app"
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600); // seconds
     }
 }
